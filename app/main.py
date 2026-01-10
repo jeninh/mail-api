@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, Header, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -489,6 +489,12 @@ async def handle_slack_interactions(
                 await db.commit()
     
     return JSONResponse(content={"ok": True})
+
+
+@app.get("/")
+async def root():
+    """Redirect to documentation page."""
+    return RedirectResponse(url="/docs-page")
 
 
 @app.get("/health")
