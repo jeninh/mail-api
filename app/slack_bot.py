@@ -45,7 +45,7 @@ class SlackBot:
         cost_usd = cents_to_usd(cost_cents)
         
         letter_url = f"https://mail.hackclub.com/back_office/letters/{letter_id}"
-        queue_url = f"https://mail.hackclub.com/back_office/letter_queues/{queue_name}"
+        queue_url = f"https://mail.hackclub.com/back_office/letter/queues/{queue_name}"
         
         blocks = [
             {
@@ -154,7 +154,7 @@ class SlackBot:
         mailed_str = mailed_at.strftime("%Y-%m-%d %I:%M %p")
         
         letter_url = f"https://mail.hackclub.com/back_office/letters/{letter_id}"
-        queue_url = f"https://mail.hackclub.com/back_office/letter_queues/{queue_name}"
+        queue_url = f"https://mail.hackclub.com/back_office/letter/queues/{queue_name}"
         
         blocks = [
             {
