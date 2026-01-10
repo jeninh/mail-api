@@ -200,7 +200,7 @@ class TheseusClient:
     
     def get_queue_url(self, queue_name: str) -> str:
         """Returns the back office URL for a queue."""
-        return f"https://mail.hackclub.com/back_office/letter_queues/{queue_name}"
+        return f"https://mail.hackclub.com/back_office/letter/queues/{queue_name}"
 
 
 theseus_client = TheseusClient()
