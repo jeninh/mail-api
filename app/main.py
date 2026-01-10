@@ -1,6 +1,7 @@
 import logging
 import hmac
 import hashlib
+import secrets
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -122,7 +123,7 @@ async def verify_admin_api_key(request: Request, authorization: str = Header(...
     
     api_key = authorization.replace("Bearer ", "")
     
-    if api_key != settings.admin_api_key:
+    if not secrets.compare_digest(api_key, settings.admin_api_key):
         _record_failed_auth(client_ip)
         raise HTTPException(status_code=401, detail="Invalid admin API key")
     
@@ -459,6 +460,11 @@ async def handle_slack_interactions(
             letter = result.scalar_one_or_none()
             
             if letter:
+                try:
+                    await theseus_client.mark_letter_mailed(letter.letter_id)
+                except TheseusAPIError as e:
+                    logger.error(f"Failed to mark letter {letter.letter_id} as mailed in Theseus: {e}")
+                
                 letter.status = LetterStatus.SHIPPED
                 letter.mailed_at = datetime.utcnow()
                 

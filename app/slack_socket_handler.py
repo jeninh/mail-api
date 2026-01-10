@@ -6,9 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.database import async_session_factory
+from app.database import AsyncSessionLocal
 from app.models import Letter, Event, LetterStatus
 from app.slack_bot import slack_bot
+from app.theseus_client import theseus_client, TheseusAPIError
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -19,7 +20,6 @@ bolt_app = AsyncApp(
 )
 
 
-@bolt_app.action("mark_mailed")
 @bolt_app.action({"action_id": lambda x: x and x.startswith("mark_mailed:")})
 async def handle_mark_mailed(ack, body, action):
     """Handle the 'Mark as Mailed' button click via Socket Mode."""
@@ -31,7 +31,7 @@ async def handle_mark_mailed(ack, body, action):
     
     letter_id = action_id.replace("mark_mailed:", "")
     
-    async with async_session_factory() as db:
+    async with AsyncSessionLocal() as db:
         stmt = select(Letter).where(Letter.letter_id == letter_id)
         result = await db.execute(stmt)
         letter = result.scalar_one_or_none()
@@ -43,6 +43,11 @@ async def handle_mark_mailed(ack, body, action):
         if letter.status == LetterStatus.SHIPPED:
             logger.info(f"Letter {letter_id} already marked as shipped")
             return
+        
+        try:
+            await theseus_client.mark_letter_mailed(letter.letter_id)
+        except TheseusAPIError as e:
+            logger.error(f"Failed to mark letter {letter_id} as mailed in Theseus: {e}")
         
         letter.status = LetterStatus.SHIPPED
         letter.mailed_at = datetime.utcnow()

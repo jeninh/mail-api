@@ -145,6 +145,51 @@ class TheseusClient:
                 logger.error(f"Theseus API request error: {e}")
                 raise TheseusAPIError(f"Failed to connect to Theseus API: {str(e)}")
     
+    async def mark_letter_mailed(self, letter_id: str) -> dict:
+        """
+        Marks a letter as mailed in Theseus.
+        
+        Args:
+            letter_id: The Theseus letter ID (e.g., "ltr!32jhyrnk")
+        
+        Returns:
+            Dict with message confirming the letter was marked as mailed
+        
+        Raises:
+            TheseusAPIError: If API call fails
+        """
+        url = f"{self.base_url}/letters/{letter_id}/mark_mailed"
+        
+        logger.info(f"Marking letter {letter_id} as mailed")
+        
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    url,
+                    headers=self._get_headers(),
+                    timeout=30.0
+                )
+                
+                if response.status_code == 404:
+                    raise TheseusAPIError(f"Letter not found: {letter_id}", status_code=404)
+                
+                if response.status_code != 200:
+                    logger.error(f"Theseus API error marking letter mailed: status {response.status_code}")
+                    raise TheseusAPIError(
+                        f"Theseus API error: status {response.status_code}",
+                        status_code=response.status_code
+                    )
+                
+                logger.info(f"Letter {letter_id} marked as mailed in Theseus")
+                return response.json()
+                
+            except httpx.TimeoutException:
+                logger.error("Theseus API timeout")
+                raise TheseusAPIError("Theseus API timeout - please try again")
+            except httpx.RequestError as e:
+                logger.error(f"Theseus API request error: {e}")
+                raise TheseusAPIError(f"Failed to connect to Theseus API: {str(e)}")
+    
     def get_letter_url(self, letter_id: str) -> str:
         """Returns the back office URL for a letter."""
         return f"https://mail.hackclub.com/back_office/letters/{letter_id}"
