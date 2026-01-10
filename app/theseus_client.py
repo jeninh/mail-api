@@ -83,7 +83,7 @@ class TheseusClient:
                     timeout=30.0
                 )
                 
-                if response.status_code != 200:
+                if response.status_code not in (200, 201):
                     logger.error(f"Theseus API error creating letter: status {response.status_code}")
                     raise TheseusAPIError(
                         f"Theseus API error: status {response.status_code}",
