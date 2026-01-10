@@ -302,7 +302,7 @@ async def create_letter(
         cost_usd=cents_to_usd(cost_cents),
         formatted_rubber_stamps=formatted_stamps,
         status=LetterStatus.QUEUED,
-        theseus_url=theseus_client.get_letter_url(letter_id)
+        theseus_url=theseus_client.get_public_letter_url(letter_id)
     )
 
 

@@ -191,8 +191,12 @@ class TheseusClient:
                 raise TheseusAPIError(f"Failed to connect to Theseus API: {str(e)}")
     
     def get_letter_url(self, letter_id: str) -> str:
-        """Returns the back office URL for a letter."""
+        """Returns the back office URL for a letter (used in Slack)."""
         return f"https://mail.hackclub.com/back_office/letters/{letter_id}"
+    
+    def get_public_letter_url(self, letter_id: str) -> str:
+        """Returns the public short URL for a letter (used in API responses)."""
+        return f"https://hack.club/{letter_id}"
     
     def get_queue_url(self, queue_name: str) -> str:
         """Returns the back office URL for a queue."""
