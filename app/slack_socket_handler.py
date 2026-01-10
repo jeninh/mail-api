@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 from slack_bolt.async_app import AsyncApp
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
@@ -20,7 +21,7 @@ bolt_app = AsyncApp(
 )
 
 
-@bolt_app.action({"action_id": lambda x: x and x.startswith("mark_mailed:")})
+@bolt_app.action({"action_id": re.compile(r"^mark_mailed:")})
 async def handle_mark_mailed(ack, body, action):
     """Handle the 'Mark as Mailed' button click via Socket Mode."""
     await ack()
@@ -72,6 +73,17 @@ async def handle_mark_mailed(ack, body, action):
         
         await db.commit()
         logger.info(f"Letter {letter_id} marked as mailed via Socket Mode")
+
+
+@bolt_app.command("/jenin-mail")
+async def handle_jenin_mail_command(ack, body, respond):
+    """Handle the /jenin-mail slash command."""
+    await ack()
+    user_id = body.get("user_id", "unknown")
+    text = body.get("text", "").strip()
+    
+    await respond(f"Hello <@{user_id}>! You ran /jenin-mail with: `{text}`")
+    logger.info(f"/jenin-mail command from {user_id}: {text}")
 
 
 socket_mode_handler: AsyncSocketModeHandler = None
