@@ -351,7 +351,10 @@ class SlackBot:
         self,
         unpaid_events: List[dict],
         total_due_cents: int,
-        total_letters: int
+        total_letters: int,
+        total_stamps_ca: int = 0,
+        total_stamps_us: int = 0,
+        total_stamps_int: int = 0
     ) -> None:
         """Updates the Slack Canvas with financial summary."""
         now = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
@@ -370,14 +373,20 @@ class SlackBot:
                 if isinstance(last_letter, datetime):
                     last_letter = last_letter.strftime("%Y-%m-%d %I:%M %p")
                 
+                stamps_ca = event.get("stamps_ca", 0)
+                stamps_us = event.get("stamps_us", 0)
+                stamps_int = event.get("stamps_int", 0)
+                
                 content += f"**{event['name']}**\n"
                 content += f"- Letters: {event['letter_count']}\n"
+                content += f"- Stamps: 🇨🇦 {stamps_ca} | 🇺🇸 {stamps_us} | 🌍 {stamps_int}\n"
                 content += f"- Balance Due: ${balance_usd:.2f} USD\n"
                 content += f"- Last Letter: {last_letter}\n\n"
         
         content += "---\n\n"
         content += f"**Total Due:** ${total_due_usd:.2f} USD\n"
         content += f"**Total Letters:** {total_letters}\n"
+        content += f"**Total Stamps:** 🇨🇦 {total_stamps_ca} | 🇺🇸 {total_stamps_us} | 🌍 {total_stamps_int}\n"
         
         try:
             await self._run_sync(

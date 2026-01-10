@@ -193,34 +193,51 @@ async def handle_paid_command(client, trigger_id, respond):
 async def handle_summary_command(respond):
     """Show a financial summary of all unpaid events."""
     from sqlalchemy import select
-    from app.models import Event
-    from app.cost_calculator import cents_to_usd
+    from app.models import Event, Letter
+    from app.cost_calculator import cents_to_usd, get_stamp_region
     
     async with AsyncSessionLocal() as db:
         stmt = select(Event).where(Event.balance_due_cents > 0)
         result = await db.execute(stmt)
         events = result.scalars().all()
-    
-    if not events:
-        await respond(
-            response_type="ephemeral",
-            text="✅ No unpaid events! All balances are settled."
-        )
-        return
-    
-    total_due_cents = 0
-    total_letters = 0
-    lines = ["💰 *Financial Summary*\n", "*Unpaid Events:*"]
-    
-    for event in events:
-        balance_usd = cents_to_usd(event.balance_due_cents)
-        lines.append(f"• {event.name}: {event.letter_count} letters → ${balance_usd:.2f}")
-        total_due_cents += event.balance_due_cents
-        total_letters += event.letter_count
+        
+        if not events:
+            await respond(
+                response_type="ephemeral",
+                text="✅ No unpaid events! All balances are settled."
+            )
+            return
+        
+        total_due_cents = 0
+        total_letters = 0
+        total_ca = 0
+        total_us = 0
+        total_int = 0
+        lines = ["💰 *Financial Summary*\n", "*Unpaid Events:*"]
+        
+        for event in events:
+            letters_stmt = select(Letter.country).where(Letter.event_id == event.id)
+            letters_result = await db.execute(letters_stmt)
+            countries = letters_result.scalars().all()
+            
+            ca_count = sum(1 for c in countries if get_stamp_region(c) == "CA")
+            us_count = sum(1 for c in countries if get_stamp_region(c) == "US")
+            int_count = sum(1 for c in countries if get_stamp_region(c) == "INT")
+            
+            balance_usd = cents_to_usd(event.balance_due_cents)
+            lines.append(f"• {event.name}: {event.letter_count} letters → ${balance_usd:.2f}")
+            lines.append(f"    🇨🇦 {ca_count} | 🇺🇸 {us_count} | 🌍 {int_count}")
+            
+            total_due_cents += event.balance_due_cents
+            total_letters += event.letter_count
+            total_ca += ca_count
+            total_us += us_count
+            total_int += int_count
     
     total_usd = cents_to_usd(total_due_cents)
     lines.append(f"\n*Total Due:* ${total_usd:.2f}")
     lines.append(f"*Total Letters:* {total_letters}")
+    lines.append(f"*Total Stamps:* 🇨🇦 {total_ca} | 🇺🇸 {total_us} | 🌍 {total_int}")
     lines.append("\n_Use `/jenin-mail paid` to mark an event as paid._")
     
     await respond(

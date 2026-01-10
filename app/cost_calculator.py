@@ -122,6 +122,25 @@ def cents_to_usd(cents: int) -> float:
     return round(cents / 100, 2)
 
 
+def get_stamp_region(country: str) -> str:
+    """
+    Returns the stamp region for a given country.
+    
+    Returns:
+        'CA' for Canada
+        'US' for United States
+        'INT' for International
+    """
+    country_lower = country.lower().strip()
+    
+    if country_lower == "canada":
+        return "CA"
+    elif country_lower in ["united states", "usa", "us", "united states of america"]:
+        return "US"
+    else:
+        return "INT"
+
+
 def get_mail_type_limits() -> dict:
     """Returns information about mail type limits for documentation."""
     return {

@@ -51,11 +51,18 @@ class MarkPaidResponse(BaseModel):
     is_paid: bool
 
 
+class StampCounts(BaseModel):
+    canada: int = 0
+    us: int = 0
+    international: int = 0
+
+
 class UnpaidEvent(BaseModel):
     event_id: int
     event_name: str
     balance_due_usd: float
     letter_count: int
+    stamps: StampCounts
     last_letter_at: Optional[datetime]
 
     class Config:
@@ -65,6 +72,7 @@ class UnpaidEvent(BaseModel):
 class FinancialSummaryResponse(BaseModel):
     unpaid_events: List[UnpaidEvent]
     total_due_usd: float
+    total_stamps: StampCounts
 
 
 class StatusCheckResponse(BaseModel):

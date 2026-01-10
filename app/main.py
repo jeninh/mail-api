@@ -18,10 +18,10 @@ from app.models import Event, Letter, LetterStatus, MailType
 from app.schemas import (
     LetterCreate, LetterResponse, ErrorResponse, MarkPaidResponse,
     FinancialSummaryResponse, UnpaidEvent, StatusCheckResponse,
-    CostCalculatorRequest, CostCalculatorResponse
+    CostCalculatorRequest, CostCalculatorResponse, StampCounts
 )
 from app.cost_calculator import (
-    calculate_cost, cents_to_usd, CostCalculationError, ParcelQuoteRequired
+    calculate_cost, cents_to_usd, get_stamp_region, CostCalculationError, ParcelQuoteRequired
 )
 from app.rubber_stamp_formatter import format_rubber_stamps
 from app.theseus_client import theseus_client, TheseusAPIError
@@ -352,24 +352,40 @@ async def get_financial_summary(
     
     unpaid_events = []
     total_due_cents = 0
+    total_ca = 0
+    total_us = 0
+    total_int = 0
     
     for event in events:
         last_letter_stmt = select(func.max(Letter.created_at)).where(Letter.event_id == event.id)
         last_letter_result = await db.execute(last_letter_stmt)
         last_letter_at = last_letter_result.scalar()
         
+        letters_stmt = select(Letter.country).where(Letter.event_id == event.id)
+        letters_result = await db.execute(letters_stmt)
+        countries = letters_result.scalars().all()
+        
+        ca_count = sum(1 for c in countries if get_stamp_region(c) == "CA")
+        us_count = sum(1 for c in countries if get_stamp_region(c) == "US")
+        int_count = sum(1 for c in countries if get_stamp_region(c) == "INT")
+        
         unpaid_events.append(UnpaidEvent(
             event_id=event.id,
             event_name=event.name,
             balance_due_usd=cents_to_usd(event.balance_due_cents),
             letter_count=event.letter_count,
+            stamps=StampCounts(canada=ca_count, us=us_count, international=int_count),
             last_letter_at=last_letter_at
         ))
         total_due_cents += event.balance_due_cents
+        total_ca += ca_count
+        total_us += us_count
+        total_int += int_count
     
     return FinancialSummaryResponse(
         unpaid_events=unpaid_events,
-        total_due_usd=cents_to_usd(total_due_cents)
+        total_due_usd=cents_to_usd(total_due_cents),
+        total_stamps=StampCounts(canada=total_ca, us=total_us, international=total_int)
     )
 
 
@@ -412,25 +428,45 @@ async def update_financial_canvas(db: AsyncSession):
     unpaid_events = []
     total_due_cents = 0
     total_letters = 0
+    total_ca = 0
+    total_us = 0
+    total_int = 0
     
     for event in events:
         last_letter_stmt = select(func.max(Letter.created_at)).where(Letter.event_id == event.id)
         last_letter_result = await db.execute(last_letter_stmt)
         last_letter_at = last_letter_result.scalar()
         
+        letters_stmt = select(Letter.country).where(Letter.event_id == event.id)
+        letters_result = await db.execute(letters_stmt)
+        countries = letters_result.scalars().all()
+        
+        ca_count = sum(1 for c in countries if get_stamp_region(c) == "CA")
+        us_count = sum(1 for c in countries if get_stamp_region(c) == "US")
+        int_count = sum(1 for c in countries if get_stamp_region(c) == "INT")
+        
         unpaid_events.append({
             "name": event.name,
             "letter_count": event.letter_count,
             "balance_due_cents": event.balance_due_cents,
-            "last_letter_at": last_letter_at
+            "last_letter_at": last_letter_at,
+            "stamps_ca": ca_count,
+            "stamps_us": us_count,
+            "stamps_int": int_count
         })
         total_due_cents += event.balance_due_cents
         total_letters += event.letter_count
+        total_ca += ca_count
+        total_us += us_count
+        total_int += int_count
     
     await slack_bot.update_financial_canvas(
         unpaid_events=unpaid_events,
         total_due_cents=total_due_cents,
-        total_letters=total_letters
+        total_letters=total_letters,
+        total_stamps_ca=total_ca,
+        total_stamps_us=total_us,
+        total_stamps_int=total_int
     )
 
 
