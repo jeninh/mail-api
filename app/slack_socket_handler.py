@@ -178,8 +178,7 @@ async def handle_paid_command(client, trigger_id, respond):
     }
     
     try:
-        await asyncio.to_thread(
-            client.views_open,
+        await client.views_open(
             trigger_id=trigger_id,
             view=modal
         )
@@ -324,8 +323,7 @@ async def handle_mark_event_paid_submission(ack, body, client):
     balance_usd = cents_to_usd(previous_balance)
     
     try:
-        await asyncio.to_thread(
-            client.chat_postMessage,
+        await client.chat_postMessage(
             channel=settings.slack_notification_channel,
             text=(
                 f"✅ *Event Marked as Paid*\n\n"
