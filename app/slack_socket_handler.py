@@ -81,7 +81,7 @@ async def start_socket_mode():
     """Start the Socket Mode handler."""
     global socket_mode_handler
     socket_mode_handler = AsyncSocketModeHandler(bolt_app, settings.slack_app_token)
-    await socket_mode_handler.start_async()
+    await socket_mode_handler.connect_async()
     logger.info("Slack Socket Mode handler started")
 
 
