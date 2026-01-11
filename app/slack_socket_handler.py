@@ -86,6 +86,10 @@ async def handle_jenin_mail_command(ack, body, client, respond):
     
     logger.info(f"/jenin-mail command from {user_id}: {text}")
     
+    if user_id != settings.slack_jenin_user_id:
+        await respond(response_type="ephemeral", text="Unauthorized")
+        return
+    
     if text == "paid":
         await handle_paid_command(client, trigger_id, respond)
     elif text == "summary":
