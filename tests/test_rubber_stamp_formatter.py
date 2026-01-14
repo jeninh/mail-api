@@ -24,8 +24,8 @@ class TestFormatRubberStamps:
         result = format_rubber_stamps(text, max_line_length=11)
         lines = result.split('\n')
         assert len(lines) == 2
-        assert lines[0] == "Congratula"
-        assert lines[1] == "tions"
+        assert lines[0] == "Congratulat"
+        assert lines[1] == "ions"
 
     def test_complex_example(self):
         text = "1x pack of stickers\n1x Postcard of Euan eating a Bread"

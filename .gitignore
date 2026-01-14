@@ -58,3 +58,7 @@ Thumbs.db
 # Miscellanious
 AGENTS.md
 AGENT.md
+.claude/
+
+# Frontend (development)
+../frontend/

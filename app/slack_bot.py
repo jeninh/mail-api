@@ -347,6 +347,70 @@ class SlackBot:
         except SlackApiError as e:
             logger.error(f"Failed to send parcel quote DM: {e}")
     
+    async def send_server_lifecycle_notification(
+        self,
+        event_type: str,
+        details: Optional[str] = None
+    ) -> None:
+        """
+        Sends server lifecycle notifications to Slack.
+        
+        Args:
+            event_type: Type of event (e.g., 'startup', 'shutdown', 'scheduler_started', etc.)
+            details: Optional additional details about the event
+        """
+        event_config = {
+            "startup": {"emoji": "🚀", "title": "Server Started", "color": "#36a64f"},
+            "shutdown": {"emoji": "🛑", "title": "Server Stopped", "color": "#ff6b6b"},
+            "scheduler_started": {"emoji": "⏰", "title": "Background Scheduler Started", "color": "#4ecdc4"},
+            "scheduler_stopped": {"emoji": "⏹️", "title": "Background Scheduler Stopped", "color": "#ffe66d"},
+            "socket_mode_connected": {"emoji": "🔌", "title": "Slack Socket Mode Connected", "color": "#4ecdc4"},
+            "socket_mode_disconnected": {"emoji": "🔌", "title": "Slack Socket Mode Disconnected", "color": "#ffe66d"},
+            "database_connected": {"emoji": "🗄️", "title": "Database Connected", "color": "#4ecdc4"},
+            "error": {"emoji": "💥", "title": "Server Error", "color": "#ff6b6b"},
+        }
+        
+        config = event_config.get(event_type, {"emoji": "ℹ️", "title": event_type.replace("_", " ").title(), "color": "#cccccc"})
+        timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        
+        blocks = [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{config['emoji']} {config['title']}",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Timestamp:* {timestamp}"
+                }
+            }
+        ]
+        
+        if details:
+            blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Details:* {details}"
+                }
+            })
+        
+        try:
+            await self._run_sync(
+                self.client.chat_postMessage,
+                channel=self.notification_channel,
+                blocks=blocks,
+                text=f"{config['title']}: {details or 'No additional details'}"
+            )
+            logger.info(f"Server lifecycle notification sent: {event_type}")
+        except SlackApiError as e:
+            logger.error(f"Failed to send lifecycle notification: {e}")
+
     async def update_financial_canvas(
         self,
         unpaid_events: List[dict],

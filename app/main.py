@@ -68,12 +68,27 @@ def _record_failed_auth(client_ip: str) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    await slack_bot.send_server_lifecycle_notification("database_connected")
+    
     start_scheduler()
+    await slack_bot.send_server_lifecycle_notification("scheduler_started")
+    
     await start_socket_mode()
+    await slack_bot.send_server_lifecycle_notification("socket_mode_connected")
+    
+    await slack_bot.send_server_lifecycle_notification("startup", f"API v{app.version} running on {settings.api_host}:{settings.api_port}")
     logger.info("Application started")
+    
     yield
+    
+    await slack_bot.send_server_lifecycle_notification("shutdown", "Graceful shutdown initiated")
+    
     await stop_socket_mode()
+    await slack_bot.send_server_lifecycle_notification("socket_mode_disconnected")
+    
     stop_scheduler()
+    await slack_bot.send_server_lifecycle_notification("scheduler_stopped")
+    
     logger.info("Application stopped")
 
 
