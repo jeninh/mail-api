@@ -94,6 +94,8 @@ async def handle_jenin_mail_command(ack, body, client, respond):
         await handle_paid_command(client, trigger_id, respond)
     elif text == "summary":
         await handle_summary_command(respond)
+    elif text == "financial":
+        await handle_financial_command(respond)
     elif text == "status":
         await handle_status_command(respond)
     else:
@@ -102,8 +104,9 @@ async def handle_jenin_mail_command(ack, body, client, respond):
             text=(
                 "❓ *Unknown Command*\n\n"
                 "Available commands:\n"
+                "• `/jenin-mail summary` - View unmailed letters by program & region\n"
+                "• `/jenin-mail financial` - View unpaid balances\n"
                 "• `/jenin-mail paid` - Mark an event as paid\n"
-                "• `/jenin-mail summary` - View financial summary\n"
                 "• `/jenin-mail status` - Check system status"
             )
         )
@@ -195,6 +198,72 @@ async def handle_paid_command(client, trigger_id, respond):
 
 
 async def handle_summary_command(respond):
+    """Show unmailed letters summary by program and region."""
+    from sqlalchemy import select
+    from app.models import Event, Letter, LetterStatus
+    from app.cost_calculator import get_stamp_region
+    
+    async with AsyncSessionLocal() as db:
+        stmt = select(Letter).where(Letter.status != LetterStatus.SHIPPED)
+        result = await db.execute(stmt)
+        unmailed_letters = result.scalars().all()
+        
+        if not unmailed_letters:
+            await respond(
+                response_type="ephemeral",
+                text="✅ No unmailed letters! All caught up."
+            )
+            return
+        
+        event_ids = set(l.event_id for l in unmailed_letters)
+        events_stmt = select(Event).where(Event.id.in_(event_ids))
+        events_result = await db.execute(events_stmt)
+        events = {e.id: e for e in events_result.scalars().all()}
+        
+        by_program: dict[str, dict] = {}
+        total_ca = 0
+        total_us = 0
+        total_int = 0
+        
+        for letter in unmailed_letters:
+            event = events.get(letter.event_id)
+            program_name = event.name if event else "Unknown"
+            
+            if program_name not in by_program:
+                by_program[program_name] = {"total": 0, "ca": 0, "us": 0, "int": 0}
+            
+            region = get_stamp_region(letter.country)
+            by_program[program_name]["total"] += 1
+            
+            if region == "CA":
+                by_program[program_name]["ca"] += 1
+                total_ca += 1
+            elif region == "US":
+                by_program[program_name]["us"] += 1
+                total_us += 1
+            else:
+                by_program[program_name]["int"] += 1
+                total_int += 1
+        
+        total_unmailed = len(unmailed_letters)
+        lines = [
+            f"📬 *Unmailed Letters Summary*\n",
+            f"*Total:* {total_unmailed} letters",
+            f"🇨🇦 {total_ca} | 🇺🇸 {total_us} | 🌍 {total_int}\n",
+            "*By Program:*"
+        ]
+        
+        for program, counts in sorted(by_program.items(), key=lambda x: -x[1]["total"]):
+            lines.append(f"• *{program}*: {counts['total']} letters")
+            lines.append(f"    🇨🇦 {counts['ca']} | 🇺🇸 {counts['us']} | 🌍 {counts['int']}")
+    
+    await respond(
+        response_type="ephemeral",
+        text="\n".join(lines)
+    )
+
+
+async def handle_financial_command(respond):
     """Show a financial summary of all unpaid events."""
     from sqlalchemy import select
     from app.models import Event, Letter
