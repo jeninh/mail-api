@@ -696,9 +696,9 @@ console.log(data);</code></pre>
             }
 
             if (mailType === 'lettermail') {
-                if (country === 'Canada') costCents = 119;
-                else if (country === 'United States') costCents = 145;
-                else costCents = 302;
+                if (country === 'Canada') costCents = 175;
+                else if (country === 'United States') costCents = 200;
+                else costCents = 350;
                 note = 'Max 30g, 245mm × 156mm × 5mm';
             } else if (mailType === 'bubble_packet') {
                 if (weight > 500) {
@@ -709,19 +709,19 @@ console.log(data);</code></pre>
                 }
 
                 if (country === 'Canada') {
-                    if (weight <= 100) costCents = 216;
-                    else if (weight <= 200) costCents = 356;
-                    else if (weight <= 300) costCents = 496;
-                    else if (weight <= 400) costCents = 567;
-                    else costCents = 610;
+                    if (weight <= 100) costCents = 311;
+                    else if (weight <= 200) costCents = 451;
+                    else if (weight <= 300) costCents = 591;
+                    else if (weight <= 400) costCents = 662;
+                    else costCents = 705;
                 } else if (country === 'United States') {
-                    if (weight <= 100) costCents = 356;
-                    else if (weight <= 200) costCents = 621;
-                    else costCents = 1243;
+                    if (weight <= 100) costCents = 451;
+                    else if (weight <= 200) costCents = 716;
+                    else costCents = 1338;
                 } else {
-                    if (weight <= 100) costCents = 713;
-                    else if (weight <= 200) costCents = 1243;
-                    else costCents = 2485;
+                    if (weight <= 100) costCents = 808;
+                    else if (weight <= 200) costCents = 1338;
+                    else costCents = 2580;
                 }
                 note = 'Max 500g, 380mm × 270mm × 20mm';
             }
