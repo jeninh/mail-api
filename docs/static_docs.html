@@ -332,6 +332,7 @@
                 <li><a href="#overview">Overview</a></li>
                 <li><a href="#authentication">Authentication</a></li>
                 <li><a href="#endpoints">Endpoints</a></li>
+                <li><a href="#orders">Orders</a></li>
                 <li><a href="#calculator">Cost Calculator</a></li>
                 <li><a href="#rubber-stamps">Rubber Stamps</a></li>
                 <li><a href="#examples">Examples</a></li>
@@ -494,6 +495,103 @@
   "mailed": 5
 }</code></pre>
                 </div>
+
+                <div class="endpoint">
+                    <h3><span class="method post">POST</span><span class="path">/api/v1/order</span></h3>
+                    <p>Create a new order request. Posts to Slack #mail channel and generates a public tracking page. Requires an event API key.</p>
+                    
+                    <h4>Request Body</h4>
+                    <table>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>order_text <span class="required">required</span></td>
+                            <td>string</td>
+                            <td>Description of what to order (max 5000 chars)</td>
+                        </tr>
+                    </table>
+
+                    <h4>Response</h4>
+                    <pre><code>{
+  "order_id": "aB3xK9m",
+  "status": "pending",
+  "status_url": "https://jenin-mail.hackclub.com/odr!aB3xK9m",
+  "created_at": "2025-01-16T10:30:00Z"
+}</code></pre>
+
+                    <h4>Example: GitHub Notebook</h4>
+                    <pre><code>curl -X POST https://jenin-mail.hackclub.com/api/v1/order \
+  -H "Authorization: Bearer YOUR_EVENT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_text": "GitHub Notebook - 1x black hardcover, 100 pages"
+  }'</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h3><span class="method get">GET</span><span class="path">/odr!{order_id}</span></h3>
+                    <p>Public order status page. Shows pending/fulfilled status with tracking code (no personal information displayed).</p>
+                    
+                    <h4>Status Display</h4>
+                    <ul style="margin-left: 24px; margin-bottom: 16px;">
+                        <li><strong>Pending:</strong> Shows "Your order is being processed"</li>
+                        <li><strong>Fulfilled:</strong> Shows fulfillment note and tracking code if provided</li>
+                    </ul>
+                </div>
+
+                <div class="endpoint">
+                    <h3><span class="method get">GET</span><span class="path">/api/v1/order/{order_id}/status</span></h3>
+                    <p>Get order status via API (public endpoint, no auth required).</p>
+                    
+                    <h4>Response</h4>
+                    <pre><code>{
+  "order_id": "aB3xK9m",
+  "status": "fulfilled",
+  "tracking_code": "1Z999AA10123456784",
+  "fulfillment_note": "Shipped via UPS Ground",
+  "created_at": "2025-01-16T10:30:00Z",
+  "fulfilled_at": "2025-01-17T14:00:00Z"
+}</code></pre>
+                </div>
+            </section>
+
+            <section id="orders">
+                <h2>Orders</h2>
+                <p>The Orders API allows you to request items without specifying shipping addresses. Orders are tracked via a public status page and managed through Slack.</p>
+
+                <div class="note-box">
+                    <strong>How it works:</strong> Submit an order → Notification posts to Slack #mail → Jenin fulfills and adds tracking → Status page updates automatically.
+                </div>
+
+                <h3>Order Flow</h3>
+                <ol style="margin-left: 24px; margin-bottom: 16px;">
+                    <li>Send a POST request to <code class="inline-code">/api/v1/order</code> with your order details</li>
+                    <li>Receive an order ID and status URL (e.g., <code class="inline-code">jenin-mail.hackclub.com/odr!aB3xK9m</code>)</li>
+                    <li>Share the status URL with the recipient</li>
+                    <li>Status page shows "Pending" until fulfilled</li>
+                    <li>Once fulfilled, status page shows tracking code and notes</li>
+                </ol>
+
+                <h3>Example: Ordering a GitHub Notebook</h3>
+                <pre><code>curl -X POST https://jenin-mail.hackclub.com/api/v1/order \
+  -H "Authorization: Bearer YOUR_EVENT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_text": "GitHub Notebook - 1x black hardcover, 100 pages"
+  }'</code></pre>
+
+                <h3>Privacy</h3>
+                <p>The public status page (<code class="inline-code">/odr!{id}</code>) only shows:</p>
+                <ul style="margin-left: 24px; margin-bottom: 16px;">
+                    <li>Order ID</li>
+                    <li>Status (Pending or Fulfilled)</li>
+                    <li>Tracking code (if provided)</li>
+                    <li>Fulfillment note (if provided)</li>
+                </ul>
+                <p>No personal information (names, addresses, etc.) is ever displayed on the status page.</p>
             </section>
 
             <section id="calculator">

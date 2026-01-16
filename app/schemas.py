@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, EmailStr, field_validator
-from app.models import MailType, LetterStatus
+from app.models import MailType, LetterStatus, OrderStatus
 
 
 class LetterCreate(BaseModel):
@@ -114,3 +114,26 @@ class EventResponse(BaseModel):
 class EventWithApiKeyResponse(EventResponse):
     """Only used when creating a new event - includes the API key once."""
     api_key: str
+
+
+class OrderCreate(BaseModel):
+    order_text: str = Field(..., min_length=1, max_length=5000)
+
+
+class OrderResponse(BaseModel):
+    order_id: str
+    status: OrderStatus
+    status_url: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OrderStatusResponse(BaseModel):
+    order_id: str
+    status: OrderStatus
+    tracking_code: Optional[str] = None
+    fulfillment_note: Optional[str] = None
+    created_at: datetime
+    fulfilled_at: Optional[datetime] = None

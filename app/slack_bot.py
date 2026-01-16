@@ -471,4 +471,304 @@ class SlackBot:
             logger.error(f"Failed to update financial canvas: {e}")
 
 
+    async def send_order_notification(
+        self,
+        event_name: str,
+        order_id: str,
+        order_text: str,
+        status_url: str
+    ) -> tuple[str, str]:
+        """
+        Sends a notification when an order is created.
+        
+        Returns:
+            Tuple of (message_ts, channel_id) for later editing
+        """
+        blocks = [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "📦 New Order Request",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Event:* {event_name}\n*Order ID:* `{order_id}`"
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Order Details:*\n{order_text}"
+                }
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "View Status Page"
+                        },
+                        "url": status_url,
+                        "action_id": "view_order_status"
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Mark Fulfilled"
+                        },
+                        "style": "primary",
+                        "action_id": f"fulfill_order:{order_id}",
+                        "value": order_id
+                    }
+                ]
+            }
+        ]
+        
+        try:
+            response = await self._run_sync(
+                self.client.chat_postMessage,
+                channel=self.notification_channel,
+                blocks=blocks,
+                text=f"New order request from {event_name}"
+            )
+            logger.info(f"Slack notification sent for order {order_id}")
+            return response["ts"], response["channel"]
+        except SlackApiError as e:
+            logger.error(f"Failed to send Slack notification: {e}")
+            raise
+
+    async def update_order_fulfilled(
+        self,
+        channel_id: str,
+        message_ts: str,
+        event_name: str,
+        order_id: str,
+        order_text: str,
+        status_url: str,
+        tracking_code: Optional[str],
+        fulfillment_note: Optional[str],
+        fulfilled_at: datetime
+    ) -> None:
+        """Updates the Slack message when an order is fulfilled."""
+        fulfilled_str = fulfilled_at.strftime("%Y-%m-%d %I:%M %p")
+        
+        blocks = [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "✅ Order Fulfilled",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Event:* {event_name}\n*Order ID:* `{order_id}`"
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Order Details:*\n{order_text}"
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Fulfilled:* {fulfilled_str}"
+                }
+            }
+        ]
+        
+        if tracking_code:
+            blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Tracking Code:* `{tracking_code}`"
+                }
+            })
+        
+        if fulfillment_note:
+            blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Note:* {fulfillment_note}"
+                }
+            })
+        
+        blocks.append({
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "View Status Page"
+                    },
+                    "url": status_url,
+                    "action_id": "view_order_status"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Update Tracking"
+                    },
+                    "action_id": f"update_tracking:{order_id}",
+                    "value": order_id
+                }
+            ]
+        })
+        
+        try:
+            await self._run_sync(
+                self.client.chat_update,
+                channel=channel_id,
+                ts=message_ts,
+                blocks=blocks,
+                text=f"Order {order_id} fulfilled"
+            )
+            logger.info(f"Slack message updated for fulfilled order {order_id}")
+        except SlackApiError as e:
+            logger.error(f"Failed to update Slack message: {e}")
+
+    async def open_fulfill_order_modal(
+        self,
+        trigger_id: str,
+        order_id: str
+    ) -> None:
+        """Opens a modal to fulfill an order with optional tracking code and note."""
+        view = {
+            "type": "modal",
+            "callback_id": f"fulfill_order_modal:{order_id}",
+            "title": {
+                "type": "plain_text",
+                "text": "Fulfill Order"
+            },
+            "submit": {
+                "type": "plain_text",
+                "text": "Fulfill"
+            },
+            "close": {
+                "type": "plain_text",
+                "text": "Cancel"
+            },
+            "blocks": [
+                {
+                    "type": "input",
+                    "block_id": "tracking_code_block",
+                    "optional": True,
+                    "element": {
+                        "type": "plain_text_input",
+                        "action_id": "tracking_code",
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Enter tracking code (optional)"
+                        }
+                    },
+                    "label": {
+                        "type": "plain_text",
+                        "text": "Tracking Code"
+                    }
+                },
+                {
+                    "type": "input",
+                    "block_id": "fulfillment_note_block",
+                    "optional": True,
+                    "element": {
+                        "type": "plain_text_input",
+                        "action_id": "fulfillment_note",
+                        "multiline": True,
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Enter any notes (optional)"
+                        }
+                    },
+                    "label": {
+                        "type": "plain_text",
+                        "text": "Note"
+                    }
+                }
+            ]
+        }
+        
+        try:
+            await self._run_sync(
+                self.client.views_open,
+                trigger_id=trigger_id,
+                view=view
+            )
+            logger.info(f"Opened fulfill modal for order {order_id}")
+        except SlackApiError as e:
+            logger.error(f"Failed to open fulfill modal: {e}")
+
+    async def open_update_tracking_modal(
+        self,
+        trigger_id: str,
+        order_id: str,
+        current_tracking: Optional[str] = None
+    ) -> None:
+        """Opens a modal to update tracking code for an order."""
+        view = {
+            "type": "modal",
+            "callback_id": f"update_tracking_modal:{order_id}",
+            "title": {
+                "type": "plain_text",
+                "text": "Update Tracking"
+            },
+            "submit": {
+                "type": "plain_text",
+                "text": "Update"
+            },
+            "close": {
+                "type": "plain_text",
+                "text": "Cancel"
+            },
+            "blocks": [
+                {
+                    "type": "input",
+                    "block_id": "tracking_code_block",
+                    "element": {
+                        "type": "plain_text_input",
+                        "action_id": "tracking_code",
+                        "initial_value": current_tracking or "",
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Enter new tracking code"
+                        }
+                    },
+                    "label": {
+                        "type": "plain_text",
+                        "text": "Tracking Code"
+                    }
+                }
+            ]
+        }
+        
+        try:
+            await self._run_sync(
+                self.client.views_open,
+                trigger_id=trigger_id,
+                view=view
+            )
+            logger.info(f"Opened update tracking modal for order {order_id}")
+        except SlackApiError as e:
+            logger.error(f"Failed to open update tracking modal: {e}")
+
+
 slack_bot = SlackBot()

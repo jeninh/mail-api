@@ -3,6 +3,8 @@ import hmac
 import hashlib
 import secrets
 import time
+import string
+import random
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -14,11 +16,12 @@ from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db, init_db
 from app.config import get_settings
-from app.models import Event, Letter, LetterStatus, MailType
+from app.models import Event, Letter, LetterStatus, MailType, Order, OrderStatus
 from app.schemas import (
     LetterCreate, LetterResponse, ErrorResponse, MarkPaidResponse,
     FinancialSummaryResponse, UnpaidEvent, StatusCheckResponse,
-    CostCalculatorRequest, CostCalculatorResponse, StampCounts
+    CostCalculatorRequest, CostCalculatorResponse, StampCounts,
+    OrderCreate, OrderResponse, OrderStatusResponse
 )
 from app.cost_calculator import (
     calculate_cost, cents_to_usd, get_stamp_region, CostCalculationError, ParcelQuoteRequired
@@ -434,6 +437,238 @@ async def calculate_shipping_cost(request: CostCalculatorRequest):
         )
 
 
+def generate_order_id() -> str:
+    """Generate a random 7-character alphanumeric order ID."""
+    chars = string.ascii_letters + string.digits
+    return ''.join(random.choices(chars, k=7))
+
+
+def get_order_status_url(order_id: str) -> str:
+    """Get the public status URL for an order."""
+    return f"https://jenin-mail.hackclub.com/odr!{order_id}"
+
+
+@app.post("/api/v1/order", response_model=OrderResponse, responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}})
+async def create_order(
+    request: OrderCreate,
+    event: Event = Depends(verify_event_api_key),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Create a new order request.
+    
+    Requires a valid event API key in the Authorization header.
+    """
+    order_id = generate_order_id()
+    
+    existing = await db.execute(select(Order).where(Order.order_id == order_id))
+    while existing.scalar_one_or_none():
+        order_id = generate_order_id()
+        existing = await db.execute(select(Order).where(Order.order_id == order_id))
+    
+    status_url = get_order_status_url(order_id)
+    
+    order = Order(
+        order_id=order_id,
+        event_id=event.id,
+        order_text=request.order_text,
+        status=OrderStatus.PENDING
+    )
+    
+    db.add(order)
+    await db.flush()
+    
+    try:
+        message_ts, channel_id = await slack_bot.send_order_notification(
+            event_name=event.name,
+            order_id=order_id,
+            order_text=request.order_text,
+            status_url=status_url
+        )
+        order.slack_message_ts = message_ts
+        order.slack_channel_id = channel_id
+    except Exception as e:
+        logger.error(f"Failed to send Slack notification for order {order_id}: {e}")
+    
+    await db.commit()
+    
+    return OrderResponse(
+        order_id=order_id,
+        status=OrderStatus.PENDING,
+        status_url=status_url,
+        created_at=order.created_at
+    )
+
+
+@app.get("/odr!{order_id}", response_class=HTMLResponse)
+async def get_order_status_page(
+    order_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Public order status page.
+    
+    Shows pending/fulfilled status without any personal information.
+    """
+    stmt = select(Order).where(Order.order_id == order_id)
+    result = await db.execute(stmt)
+    order = result.scalar_one_or_none()
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if order.status == OrderStatus.PENDING:
+        status_html = """
+        <div class="status pending">
+            <div class="status-icon">⏳</div>
+            <h2>Pending</h2>
+            <p>Your order is being processed.</p>
+        </div>
+        """
+    else:
+        fulfillment_info = ""
+        if order.fulfillment_note:
+            fulfillment_info = f'<p class="note">{order.fulfillment_note}</p>'
+        if order.tracking_code:
+            fulfillment_info += f'<p class="tracking">Tracking: <code>{order.tracking_code}</code></p>'
+        
+        status_html = f"""
+        <div class="status fulfilled">
+            <div class="status-icon">✅</div>
+            <h2>Fulfilled</h2>
+            {fulfillment_info}
+        </div>
+        """
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Status - {order_id}</title>
+        <style>
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+            }}
+            .container {{
+                background: white;
+                border-radius: 16px;
+                padding: 40px;
+                max-width: 400px;
+                width: 100%;
+                text-align: center;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }}
+            h1 {{
+                font-size: 14px;
+                color: #666;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                margin-bottom: 20px;
+            }}
+            .order-id {{
+                font-family: monospace;
+                font-size: 24px;
+                color: #333;
+                margin-bottom: 30px;
+            }}
+            .status {{
+                padding: 20px;
+                border-radius: 12px;
+            }}
+            .status-icon {{
+                font-size: 48px;
+                margin-bottom: 10px;
+            }}
+            .status h2 {{
+                font-size: 28px;
+                margin-bottom: 10px;
+            }}
+            .status p {{
+                color: #666;
+            }}
+            .pending {{
+                background: #fff3cd;
+            }}
+            .pending h2 {{
+                color: #856404;
+            }}
+            .fulfilled {{
+                background: #d4edda;
+            }}
+            .fulfilled h2 {{
+                color: #155724;
+            }}
+            .tracking {{
+                margin-top: 15px;
+                font-size: 14px;
+            }}
+            .tracking code {{
+                background: #f8f9fa;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 16px;
+            }}
+            .note {{
+                margin-top: 15px;
+                font-style: italic;
+            }}
+            .footer {{
+                margin-top: 30px;
+                font-size: 12px;
+                color: #999;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Order Status</h1>
+            <div class="order-id">{order_id}</div>
+            {status_html}
+            <div class="footer">Hack Club Mail</div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=html)
+
+
+@app.get("/api/v1/order/{order_id}/status", response_model=OrderStatusResponse)
+async def get_order_status_api(
+    order_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get order status via API (public endpoint)."""
+    stmt = select(Order).where(Order.order_id == order_id)
+    result = await db.execute(stmt)
+    order = result.scalar_one_or_none()
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    return OrderStatusResponse(
+        order_id=order.order_id,
+        status=order.status,
+        tracking_code=order.tracking_code,
+        fulfillment_note=order.fulfillment_note,
+        created_at=order.created_at,
+        fulfilled_at=order.fulfilled_at
+    )
+
+
 async def update_financial_canvas(db: AsyncSession):
     """Updates the Slack canvas with current financial summary."""
     stmt = select(Event).where(Event.balance_due_cents > 0)
@@ -498,7 +733,82 @@ async def handle_slack_interactions(
     parsed = parse_qs(body.decode())
     payload = json.loads(parsed.get("payload", ["{}"])[0])
     
+    payload_type = payload.get("type", "")
+    
+    if payload_type == "view_submission":
+        callback_id = payload.get("view", {}).get("callback_id", "")
+        values = payload.get("view", {}).get("state", {}).get("values", {})
+        
+        if callback_id.startswith("fulfill_order_modal:"):
+            order_id = callback_id.replace("fulfill_order_modal:", "")
+            tracking_code = values.get("tracking_code_block", {}).get("tracking_code", {}).get("value")
+            fulfillment_note = values.get("fulfillment_note_block", {}).get("fulfillment_note", {}).get("value")
+            
+            stmt = select(Order).where(Order.order_id == order_id)
+            result = await db.execute(stmt)
+            order = result.scalar_one_or_none()
+            
+            if order:
+                order.status = OrderStatus.FULFILLED
+                order.fulfilled_at = datetime.utcnow()
+                order.tracking_code = tracking_code
+                order.fulfillment_note = fulfillment_note
+                
+                event_stmt = select(Event).where(Event.id == order.event_id)
+                event_result = await db.execute(event_stmt)
+                event = event_result.scalar_one_or_none()
+                
+                if event and order.slack_message_ts and order.slack_channel_id:
+                    await slack_bot.update_order_fulfilled(
+                        channel_id=order.slack_channel_id,
+                        message_ts=order.slack_message_ts,
+                        event_name=event.name,
+                        order_id=order.order_id,
+                        order_text=order.order_text,
+                        status_url=get_order_status_url(order.order_id),
+                        tracking_code=order.tracking_code,
+                        fulfillment_note=order.fulfillment_note,
+                        fulfilled_at=order.fulfilled_at
+                    )
+                
+                await db.commit()
+            
+            return JSONResponse(content={"response_action": "clear"})
+        
+        elif callback_id.startswith("update_tracking_modal:"):
+            order_id = callback_id.replace("update_tracking_modal:", "")
+            tracking_code = values.get("tracking_code_block", {}).get("tracking_code", {}).get("value")
+            
+            stmt = select(Order).where(Order.order_id == order_id)
+            result = await db.execute(stmt)
+            order = result.scalar_one_or_none()
+            
+            if order:
+                order.tracking_code = tracking_code
+                
+                event_stmt = select(Event).where(Event.id == order.event_id)
+                event_result = await db.execute(event_stmt)
+                event = event_result.scalar_one_or_none()
+                
+                if event and order.slack_message_ts and order.slack_channel_id:
+                    await slack_bot.update_order_fulfilled(
+                        channel_id=order.slack_channel_id,
+                        message_ts=order.slack_message_ts,
+                        event_name=event.name,
+                        order_id=order.order_id,
+                        order_text=order.order_text,
+                        status_url=get_order_status_url(order.order_id),
+                        tracking_code=order.tracking_code,
+                        fulfillment_note=order.fulfillment_note,
+                        fulfilled_at=order.fulfilled_at
+                    )
+                
+                await db.commit()
+            
+            return JSONResponse(content={"response_action": "clear"})
+    
     actions = payload.get("actions", [])
+    trigger_id = payload.get("trigger_id")
     
     for action in actions:
         action_id = action.get("action_id", "")
@@ -538,6 +848,24 @@ async def handle_slack_interactions(
                     )
                 
                 await db.commit()
+        
+        elif action_id.startswith("fulfill_order:"):
+            order_id = action_id.replace("fulfill_order:", "")
+            if trigger_id:
+                await slack_bot.open_fulfill_order_modal(trigger_id, order_id)
+        
+        elif action_id.startswith("update_tracking:"):
+            order_id = action_id.replace("update_tracking:", "")
+            stmt = select(Order).where(Order.order_id == order_id)
+            result = await db.execute(stmt)
+            order = result.scalar_one_or_none()
+            
+            if trigger_id and order:
+                await slack_bot.open_update_tracking_modal(
+                    trigger_id, 
+                    order_id, 
+                    order.tracking_code
+                )
     
     return JSONResponse(content={"ok": True})
 

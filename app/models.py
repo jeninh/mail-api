@@ -21,6 +21,11 @@ class LetterStatus(str, PyEnum):
     FAILED = "failed"
 
 
+class OrderStatus(str, PyEnum):
+    PENDING = "pending"
+    FULFILLED = "fulfilled"
+
+
 class Event(Base):
     __tablename__ = "events"
 
@@ -78,3 +83,32 @@ class Letter(Base):
 
     def __repr__(self):
         return f"<Letter(id={self.id}, letter_id='{self.letter_id}')>"
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(String(7), unique=True, nullable=False, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    
+    order_text = Column(Text, nullable=False)
+    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
+    tracking_code = Column(String(255), nullable=True)
+    fulfillment_note = Column(Text, nullable=True)
+    
+    slack_message_ts = Column(String(255), nullable=True)
+    slack_channel_id = Column(String(255), nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fulfilled_at = Column(DateTime, nullable=True)
+
+    event = relationship("Event", backref="orders")
+
+    __table_args__ = (
+        Index("ix_orders_status", "status"),
+        Index("ix_orders_event_id", "event_id"),
+    )
+
+    def __repr__(self):
+        return f"<Order(id={self.id}, order_id='{self.order_id}')>"
