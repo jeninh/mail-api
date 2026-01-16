@@ -20,11 +20,11 @@ def calculate_lettermail_cost(country: str) -> int:
     country_lower = country.lower().strip()
     
     if country_lower == "canada":
-        return 139  # $1.39 USD
+        return 175  # $1.75 USD
     elif country_lower in ["united states", "usa", "us", "united states of america"]:
-        return 165  # $1.65 USD
+        return 200  # $2.00 USD
     else:
-        return 322  # $3.22 USD (International)
+        return 350  # $3.50 USD (International)
 
 
 def calculate_bubble_packet_cost(country: str, weight_grams: int) -> int:
@@ -44,31 +44,31 @@ def calculate_bubble_packet_cost(country: str, weight_grams: int) -> int:
     
     if country_lower == "canada":
         if weight_grams <= 100:
-            return 236
+            return 311
         elif weight_grams <= 200:
-            return 376
+            return 451
         elif weight_grams <= 300:
-            return 516
+            return 591
         elif weight_grams <= 400:
-            return 587
+            return 662
         else:  # <= 500
-            return 630
+            return 705
     
     elif country_lower in ["united states", "usa", "us", "united states of america"]:
         if weight_grams <= 100:
-            return 376
+            return 451
         elif weight_grams <= 200:
-            return 641
+            return 716
         else:  # <= 500
-            return 1263
+            return 1338
     
     else:  # International
         if weight_grams <= 100:
-            return 733
+            return 808
         elif weight_grams <= 200:
-            return 1263
+            return 1338
         else:  # <= 500
-            return 2505
+            return 2580
 
 
 def calculate_parcel_cost(weight_grams: int, country: str) -> int:
