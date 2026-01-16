@@ -118,6 +118,15 @@ class EventWithApiKeyResponse(EventResponse):
 
 class OrderCreate(BaseModel):
     order_text: str = Field(..., min_length=1, max_length=5000)
+    first_name: str = Field(..., min_length=1, max_length=255)
+    last_name: str = Field(..., min_length=1, max_length=255)
+    email: Optional[EmailStr] = None
+    address_line_1: str = Field(..., min_length=1, max_length=255)
+    address_line_2: Optional[str] = Field(None, max_length=255)
+    city: str = Field(..., min_length=1, max_length=255)
+    state: str = Field(..., min_length=1, max_length=255)
+    postal_code: str = Field(..., min_length=1, max_length=255)
+    country: str = Field(..., min_length=1, max_length=255)
 
 
 class OrderResponse(BaseModel):

@@ -476,14 +476,35 @@ class SlackBot:
         event_name: str,
         order_id: str,
         order_text: str,
-        status_url: str
+        status_url: str,
+        first_name: str,
+        last_name: str,
+        email: Optional[str],
+        address_line_1: str,
+        address_line_2: Optional[str],
+        city: str,
+        state: str,
+        postal_code: str,
+        country: str
     ) -> tuple[str, str]:
         """
         Sends a notification when an order is created.
         
+        PII is included in this message and NEVER stored in the database.
+        This is the only place the shipping address exists.
+        
         Returns:
             Tuple of (message_ts, channel_id) for later editing
         """
+        address_parts = [address_line_1]
+        if address_line_2:
+            address_parts.append(address_line_2)
+        address_parts.append(f"{city}, {state} {postal_code}")
+        address_parts.append(country)
+        address_text = "\n".join(address_parts)
+        
+        email_text = f"\n*Email:* {email}" if email else ""
+        
         blocks = [
             {
                 "type": "header",
@@ -506,6 +527,37 @@ class SlackBot:
                     "type": "mrkdwn",
                     "text": f"*Order Details:*\n{order_text}"
                 }
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Ship To:*\n*{first_name} {last_name}*\n{address_text}{email_text}"
+                }
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": "⚠️ Address is shown here ONLY and NOT stored in database"
+                    }
+                ]
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": "💵 $1 fee per item • Charged to event's HCB"
+                    }
+                ]
             },
             {
                 "type": "actions",

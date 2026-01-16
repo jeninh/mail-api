@@ -93,6 +93,9 @@ class Order(Base):
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
     
     order_text = Column(Text, nullable=False)
+    
+    # NOTE: PII (name, address) is sent ONLY to Slack and NEVER stored in database
+    
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
     tracking_code = Column(String(255), nullable=True)
     fulfillment_note = Column(Text, nullable=True)

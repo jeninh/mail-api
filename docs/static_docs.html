@@ -498,7 +498,7 @@
 
                 <div class="endpoint">
                     <h3><span class="method post">POST</span><span class="path">/api/v1/order</span></h3>
-                    <p>Create a new order request. Posts to Slack #mail channel and generates a public tracking page. Requires an event API key.</p>
+                    <p>Create a new order request. Jenin will order from a local carrier and ship to the recipient. Charged to your event's HCB. <strong>$1 fee per item.</strong></p>
                     
                     <h4>Request Body</h4>
                     <table>
@@ -510,7 +510,52 @@
                         <tr>
                             <td>order_text <span class="required">required</span></td>
                             <td>string</td>
-                            <td>Description of what to order (max 5000 chars)</td>
+                            <td>Description of what to order (max 5000 chars). <strong>Do NOT include names/addresses here</strong> - use the dedicated fields below.</td>
+                        </tr>
+                        <tr>
+                            <td>first_name <span class="required">required</span></td>
+                            <td>string</td>
+                            <td>Recipient's first name (not stored)</td>
+                        </tr>
+                        <tr>
+                            <td>last_name <span class="required">required</span></td>
+                            <td>string</td>
+                            <td>Recipient's last name (not stored)</td>
+                        </tr>
+                        <tr>
+                            <td>email <span class="optional">optional</span></td>
+                            <td>string</td>
+                            <td>Recipient's email (not stored)</td>
+                        </tr>
+                        <tr>
+                            <td>address_line_1 <span class="required">required</span></td>
+                            <td>string</td>
+                            <td>Street address (not stored)</td>
+                        </tr>
+                        <tr>
+                            <td>address_line_2 <span class="optional">optional</span></td>
+                            <td>string</td>
+                            <td>Apartment, suite, etc. (not stored)</td>
+                        </tr>
+                        <tr>
+                            <td>city <span class="required">required</span></td>
+                            <td>string</td>
+                            <td>City name (not stored)</td>
+                        </tr>
+                        <tr>
+                            <td>state <span class="required">required</span></td>
+                            <td>string</td>
+                            <td>State/Province (not stored)</td>
+                        </tr>
+                        <tr>
+                            <td>postal_code <span class="required">required</span></td>
+                            <td>string</td>
+                            <td>ZIP/Postal code (not stored)</td>
+                        </tr>
+                        <tr>
+                            <td>country <span class="required">required</span></td>
+                            <td>string</td>
+                            <td>Country name (not stored)</td>
                         </tr>
                     </table>
 
@@ -527,7 +572,15 @@
   -H "Authorization: Bearer YOUR_EVENT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "order_text": "GitHub Notebook - 1x black hardcover, 100 pages"
+    "order_text": "GitHub Notebook - 1x black hardcover, 100 pages",
+    "first_name": "Orpheus",
+    "last_name": "Hacksworth",
+    "email": "orpheus@hackclub.com",
+    "address_line_1": "123 Hacker Way",
+    "city": "Shelburne",
+    "state": "VT",
+    "postal_code": "05482",
+    "country": "United States"
   }'</code></pre>
                 </div>
 
@@ -560,18 +613,23 @@
 
             <section id="orders">
                 <h2>Orders</h2>
-                <p>The Orders API allows you to request items without specifying shipping addresses. Orders are tracked via a public status page and managed through Slack.</p>
+                <p>The Orders API allows you to request items that Jenin will order from a local carrier and ship to the recipient. Orders are charged to your event's HCB account.</p>
 
                 <div class="note-box">
-                    <strong>How it works:</strong> Submit an order → Notification posts to Slack #mail → Jenin fulfills and adds tracking → Status page updates automatically.
+                    <strong>💵 Pricing:</strong> There is a <strong>$1 fee per item</strong> ordered, plus actual shipping costs. All charges go to your event's HCB.
+                </div>
+
+                <div class="note-box">
+                    <strong>How it works:</strong> Submit an order with shipping address → Jenin orders from local carrier → Ships to recipient → Charged to your HCB → Status page updates with tracking.
                 </div>
 
                 <h3>Order Flow</h3>
                 <ol style="margin-left: 24px; margin-bottom: 16px;">
-                    <li>Send a POST request to <code class="inline-code">/api/v1/order</code> with your order details</li>
+                    <li>Send a POST request to <code class="inline-code">/api/v1/order</code> with order details and shipping address</li>
                     <li>Receive an order ID and status URL (e.g., <code class="inline-code">jenin-mail.hackclub.com/odr!aB3xK9m</code>)</li>
                     <li>Share the status URL with the recipient</li>
-                    <li>Status page shows "Pending" until fulfilled</li>
+                    <li>Jenin orders items from local carrier and ships to the provided address</li>
+                    <li>Costs are charged to your event's HCB account</li>
                     <li>Once fulfilled, status page shows tracking code and notes</li>
                 </ol>
 
@@ -580,10 +638,26 @@
   -H "Authorization: Bearer YOUR_EVENT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "order_text": "GitHub Notebook - 1x black hardcover, 100 pages"
+    "order_text": "GitHub Notebook - 1x black hardcover, 100 pages",
+    "first_name": "Orpheus",
+    "last_name": "Hacksworth",
+    "email": "orpheus@hackclub.com",
+    "address_line_1": "123 Hacker Way",
+    "city": "Shelburne",
+    "state": "VT",
+    "postal_code": "05482",
+    "country": "United States"
   }'</code></pre>
 
-                <h3>Privacy</h3>
+                <h3>Privacy &amp; Security</h3>
+                <p>Shipping addresses are <strong>NEVER stored in the database</strong>. PII is:</p>
+                <ul style="margin-left: 24px; margin-bottom: 16px;">
+                    <li>Sent directly to the Slack #mail channel when the order is created</li>
+                    <li>Visible only in that one Slack message</li>
+                    <li>Never stored, cached, or logged anywhere</li>
+                    <li>Cannot be retrieved from the API or database</li>
+                </ul>
+                
                 <p>The public status page (<code class="inline-code">/odr!{id}</code>) only shows:</p>
                 <ul style="margin-left: 24px; margin-bottom: 16px;">
                     <li>Order ID</li>
@@ -591,7 +665,7 @@
                     <li>Tracking code (if provided)</li>
                     <li>Fulfillment note (if provided)</li>
                 </ul>
-                <p>No personal information (names, addresses, etc.) is ever displayed on the status page.</p>
+                <p><strong>No personal information</strong> (names, addresses, etc.) is ever displayed on the public status page.</p>
             </section>
 
             <section id="calculator">

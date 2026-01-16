@@ -103,6 +103,28 @@ app = FastAPI(
 )
 
 
+from fastapi.exceptions import RequestValidationError
+
+@app.exception_handler(RequestValidationError)
+async def pii_safe_validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Custom validation error handler that does NOT echo input values.
+    This prevents PII (names, addresses, emails) from leaking in 422 error responses.
+    """
+    safe_errors = []
+    for error in exc.errors():
+        safe_errors.append({
+            "loc": error.get("loc"),
+            "msg": error.get("msg"),
+            "type": error.get("type")
+        })
+    
+    return JSONResponse(
+        status_code=422,
+        content={"detail": safe_errors}
+    )
+
+
 async def verify_event_api_key(
     request: Request,
     authorization: str = Header(...),
@@ -458,6 +480,8 @@ async def create_order(
     Create a new order request.
     
     Requires a valid event API key in the Authorization header.
+    Orders are fulfilled by Jenin via local carrier and charged to the event's HCB.
+    There is a $1 fee per item ordered.
     """
     order_id = generate_order_id()
     
@@ -483,7 +507,16 @@ async def create_order(
             event_name=event.name,
             order_id=order_id,
             order_text=request.order_text,
-            status_url=status_url
+            status_url=status_url,
+            first_name=request.first_name,
+            last_name=request.last_name,
+            email=request.email,
+            address_line_1=request.address_line_1,
+            address_line_2=request.address_line_2,
+            city=request.city,
+            state=request.state,
+            postal_code=request.postal_code,
+            country=request.country
         )
         order.slack_message_ts = message_ts
         order.slack_channel_id = channel_id
@@ -732,6 +765,16 @@ async def handle_slack_interactions(
     
     parsed = parse_qs(body.decode())
     payload = json.loads(parsed.get("payload", ["{}"])[0])
+    
+    user_id = payload.get("user", {}).get("id")
+    if user_id != settings.slack_jenin_user_id:
+        logger.warning(f"Unauthorized Slack interaction attempt from user {user_id}")
+        return JSONResponse(
+            content={
+                "response_action": "errors",
+                "errors": {"general": "Unauthorized - only Jenin can use this bot"}
+            }
+        )
     
     payload_type = payload.get("type", "")
     
