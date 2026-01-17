@@ -579,7 +579,6 @@ async def get_order_status_page(
     if order.status == OrderStatus.PENDING:
         status_html = """
         <div class="card sunken">
-            <div class="status-icon">⏳</div>
             <h2>Pending</h2>
             <p class="caption">Your order is being processed.</p>
         </div>
@@ -667,7 +666,7 @@ async def get_order_status_page(
             <p class="eyebrow">Order Status</p>
             <div class="order-id">{escaped_order_id}</div>
             {status_html}
-            <footer class="caption">Hack Club Mail</footer>
+            <footer class="caption">Jenin's Mail Service</footer>
         </main>
     </body>
     </html>
