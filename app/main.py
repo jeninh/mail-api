@@ -610,7 +610,14 @@ async def get_order_status_page(
         <title>Order {escaped_order_id}</title>
         <link rel="stylesheet" href="https://css.hackclub.com/theme.css">
         <style>
+            :root {{
+                --bg: #121217;
+                --card-bg: #1e1e24;
+                --green: #33d17a;
+            }}
             body {{
+                background: var(--bg);
+                color: #fff;
                 min-height: 100vh;
                 display: flex;
                 flex-direction: column;
@@ -618,28 +625,40 @@ async def get_order_status_page(
                 justify-content: center;
                 padding: 2rem;
             }}
+            .eyebrow {{
+                color: var(--green);
+            }}
             .order-id {{
                 font-family: var(--font-mono);
                 font-size: 1.5rem;
-                color: var(--muted);
+                color: #aaa;
                 margin-bottom: 1.5rem;
+            }}
+            .card {{
+                background: var(--card-bg);
+                border: 1px solid #333;
+                padding: 2rem;
+                border-radius: 12px;
             }}
             .status-icon {{
                 font-size: 3rem;
                 margin-bottom: 0.5rem;
             }}
-            .note, .tracking {{
-                margin-top: 1rem;
-                color: var(--slate);
+            h2 {{
+                color: #fff;
+            }}
+            .note, .tracking, .caption {{
+                color: #888;
             }}
             .tracking code {{
-                background: var(--sunken);
+                background: #2a2a30;
                 padding: 0.25rem 0.5rem;
                 border-radius: 4px;
+                color: #ccc;
             }}
             footer {{
                 margin-top: 2rem;
-                color: var(--muted);
+                color: #666;
             }}
         </style>
     </head>
