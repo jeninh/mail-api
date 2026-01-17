@@ -637,7 +637,7 @@ async def get_order_status_page(
                 background: var(--card-bg);
                 border: 1px solid #333;
                 padding: 2rem;
-                border-radius: 12px;
+                border-radius: 0;
             }}
             .status-icon {{
                 font-size: 3rem;
