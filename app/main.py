@@ -1,3 +1,4 @@
+import html
 import logging
 import hmac
 import hashlib
@@ -5,13 +6,17 @@ import secrets
 import time
 import string
 import random
-from collections import defaultdict
+import uuid
+
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, Header, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db, init_db
@@ -41,31 +46,11 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
-# Simple in-memory rate limiter for failed auth attempts
-# Tracks: {ip: [(timestamp, count)]}
-_failed_auth_attempts: dict[str, list[float]] = defaultdict(list)
-_RATE_LIMIT_WINDOW = 60  # seconds
-_RATE_LIMIT_MAX_ATTEMPTS = 10  # max failed attempts per window
+# Rate limiter for public endpoints (no API key required)
+limiter = Limiter(key_func=get_remote_address)
 
-
-def _check_rate_limit(client_ip: str) -> None:
-    """Check if IP has exceeded rate limit for failed auth attempts."""
-    now = time.time()
-    attempts = _failed_auth_attempts[client_ip]
-    
-    # Clean old attempts outside window
-    _failed_auth_attempts[client_ip] = [t for t in attempts if now - t < _RATE_LIMIT_WINDOW]
-    
-    if len(_failed_auth_attempts[client_ip]) >= _RATE_LIMIT_MAX_ATTEMPTS:
-        raise HTTPException(
-            status_code=429,
-            detail="Too many failed authentication attempts. Try again later."
-        )
-
-
-def _record_failed_auth(client_ip: str) -> None:
-    """Record a failed authentication attempt."""
-    _failed_auth_attempts[client_ip].append(time.time())
+# Rate limiter for auth attempts (stricter limits)
+auth_limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
@@ -102,6 +87,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.state.limiter = limiter
+app.state.auth_limiter = auth_limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded. Please try again later."}
+    )
+
 
 from fastapi.exceptions import RequestValidationError
 
@@ -125,17 +121,47 @@ async def pii_safe_validation_exception_handler(request: Request, exc: RequestVa
     )
 
 
+@app.exception_handler(Exception)
+async def pii_safe_exception_handler(request: Request, exc: Exception):
+    """
+    Global exception handler that prevents PII from leaking in 500 error responses.
+    Logs the full exception internally but returns a generic message to clients.
+    Also sends error notification to Slack with the error ID.
+    """
+    error_id = str(uuid.uuid4())[:8]
+    
+    logger.error(
+        f"Unhandled exception [error_id={error_id}] on {request.method} {request.url.path}: "
+        f"{type(exc).__name__}: {exc}",
+        exc_info=True
+    )
+    
+    try:
+        await slack_bot.send_error_notification(
+            event_name=f"Server Error [{error_id}]",
+            error_message=f"{type(exc).__name__}: {exc}",
+            request_summary=f"{request.method} {request.url.path}"
+        )
+    except Exception as slack_error:
+        logger.error(f"Failed to send Slack error notification: {slack_error}")
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "An internal server error occurred. Please try again later.",
+            "error_id": error_id
+        }
+    )
+
+
+@auth_limiter.limit("10/minute")
 async def verify_event_api_key(
     request: Request,
     authorization: str = Header(...),
     db: AsyncSession = Depends(get_db)
 ) -> Event:
     """Verifies the event API key and returns the event."""
-    client_ip = request.client.host if request.client else "unknown"
-    _check_rate_limit(client_ip)
-    
     if not authorization.startswith("Bearer "):
-        _record_failed_auth(client_ip)
         raise HTTPException(status_code=401, detail="Invalid authorization header format")
     
     api_key = authorization.replace("Bearer ", "")
@@ -146,25 +172,20 @@ async def verify_event_api_key(
     event = result.scalar_one_or_none()
     
     if not event:
-        _record_failed_auth(client_ip)
         raise HTTPException(status_code=401, detail="Invalid API key")
     
     return event
 
 
+@auth_limiter.limit("10/minute")
 async def verify_admin_api_key(request: Request, authorization: str = Header(...)) -> bool:
     """Verifies the admin API key."""
-    client_ip = request.client.host if request.client else "unknown"
-    _check_rate_limit(client_ip)
-    
     if not authorization.startswith("Bearer "):
-        _record_failed_auth(client_ip)
         raise HTTPException(status_code=401, detail="Invalid authorization header format")
     
     api_key = authorization.replace("Bearer ", "")
     
     if not secrets.compare_digest(api_key, settings.admin_api_key):
-        _record_failed_auth(client_ip)
         raise HTTPException(status_code=401, detail="Invalid admin API key")
     
     return True
@@ -437,13 +458,14 @@ async def manual_status_check(_: bool = Depends(verify_admin_api_key)):
 
 
 @app.post("/api/v1/calculate-cost", response_model=CostCalculatorResponse)
-async def calculate_shipping_cost(request: CostCalculatorRequest):
+@limiter.limit("30/minute")
+async def calculate_shipping_cost(request: Request, body: CostCalculatorRequest):
     """Calculate shipping cost for a given mail type and destination."""
     try:
         cost_cents = calculate_cost(
-            mail_type=request.mail_type,
-            country=request.country,
-            weight_grams=request.weight_grams
+            mail_type=body.mail_type,
+            country=body.country,
+            weight_grams=body.weight_grams
         )
         return CostCalculatorResponse(
             cost_cents=cost_cents,
@@ -534,7 +556,9 @@ async def create_order(
 
 
 @app.get("/odr!{order_id}", response_class=HTMLResponse)
+@limiter.limit("60/minute")
 async def get_order_status_page(
+    request: Request,
     order_id: str,
     db: AsyncSession = Depends(get_db)
 ):
@@ -550,6 +574,8 @@ async def get_order_status_page(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
+    escaped_order_id = html.escape(order_id)
+    
     if order.status == OrderStatus.PENDING:
         status_html = """
         <div class="status pending">
@@ -561,9 +587,11 @@ async def get_order_status_page(
     else:
         fulfillment_info = ""
         if order.fulfillment_note:
-            fulfillment_info = f'<p class="note">{order.fulfillment_note}</p>'
+            escaped_note = html.escape(order.fulfillment_note)
+            fulfillment_info = f'<p class="note">{escaped_note}</p>'
         if order.tracking_code:
-            fulfillment_info += f'<p class="tracking">Tracking: <code>{order.tracking_code}</code></p>'
+            escaped_tracking = html.escape(order.tracking_code)
+            fulfillment_info += f'<p class="tracking">Tracking: <code>{escaped_tracking}</code></p>'
         
         status_html = f"""
         <div class="status fulfilled">
@@ -579,7 +607,7 @@ async def get_order_status_page(
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Order Status - {order_id}</title>
+        <title>Order Status - {escaped_order_id}</title>
         <style>
             * {{
                 margin: 0;
@@ -668,7 +696,7 @@ async def get_order_status_page(
     <body>
         <div class="container">
             <h1>Order Status</h1>
-            <div class="order-id">{order_id}</div>
+            <div class="order-id">{escaped_order_id}</div>
             {status_html}
             <div class="footer">Hack Club Mail</div>
         </div>
@@ -680,7 +708,9 @@ async def get_order_status_page(
 
 
 @app.get("/api/v1/order/{order_id}/status", response_model=OrderStatusResponse)
+@limiter.limit("60/minute")
 async def get_order_status_api(
+    request: Request,
     order_id: str,
     db: AsyncSession = Depends(get_db)
 ):
@@ -787,6 +817,14 @@ async def handle_slack_interactions(
             tracking_code = values.get("tracking_code_block", {}).get("tracking_code", {}).get("value")
             fulfillment_note = values.get("fulfillment_note_block", {}).get("fulfillment_note", {}).get("value")
             
+            errors = {}
+            if tracking_code and len(tracking_code) > 64:
+                errors["tracking_code_block"] = "Tracking code must be 64 characters or less"
+            if fulfillment_note and len(fulfillment_note) > 500:
+                errors["fulfillment_note_block"] = "Note must be 500 characters or less"
+            if errors:
+                return JSONResponse(content={"response_action": "errors", "errors": errors})
+            
             stmt = select(Order).where(Order.order_id == order_id)
             result = await db.execute(stmt)
             order = result.scalar_one_or_none()
@@ -821,6 +859,11 @@ async def handle_slack_interactions(
         elif callback_id.startswith("update_tracking_modal:"):
             order_id = callback_id.replace("update_tracking_modal:", "")
             tracking_code = values.get("tracking_code_block", {}).get("tracking_code", {}).get("value")
+            
+            if not tracking_code or len(tracking_code) < 1:
+                return JSONResponse(content={"response_action": "errors", "errors": {"tracking_code_block": "Tracking code is required"}})
+            if len(tracking_code) > 64:
+                return JSONResponse(content={"response_action": "errors", "errors": {"tracking_code_block": "Tracking code must be 64 characters or less"}})
             
             stmt = select(Order).where(Order.order_id == order_id)
             result = await db.execute(stmt)
@@ -914,19 +957,22 @@ async def handle_slack_interactions(
 
 
 @app.get("/")
-async def root():
+@limiter.limit("60/minute")
+async def root(request: Request):
     """Redirect to documentation page."""
     return RedirectResponse(url="/docs-page")
 
 
 @app.get("/health")
-async def health_check():
+@limiter.limit("60/minute")
+async def health_check(request: Request):
     """Health check endpoint."""
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 
 @app.get("/docs-page", response_class=HTMLResponse)
-async def get_docs_page():
+@limiter.limit("60/minute")
+async def get_docs_page(request: Request):
     """Serve the custom documentation page."""
     try:
         with open("docs/static_docs.html", "r") as f:

@@ -204,3 +204,32 @@ class TheseusClient:
 
 
 theseus_client = TheseusClient()
+
+
+async def log_error(
+    error_message: str,
+    event_name: str = "Unknown",
+    request_summary: str = "",
+    notify_slack: bool = True
+) -> None:
+    """
+    Logs an error to server logs and optionally sends a Slack notification.
+    
+    Args:
+        error_message: The error message to log
+        event_name: The event/context where the error occurred
+        request_summary: Summary of the request that caused the error
+        notify_slack: Whether to also send a Slack notification (default: True)
+    """
+    logger.error(f"[{event_name}] {error_message} | Request: {request_summary}")
+    
+    if notify_slack:
+        try:
+            from app.slack_bot import slack_bot
+            await slack_bot.send_error_notification(
+                event_name=event_name,
+                error_message=error_message,
+                request_summary=request_summary
+            )
+        except Exception as slack_error:
+            logger.error(f"Failed to send Slack error notification: {slack_error}")

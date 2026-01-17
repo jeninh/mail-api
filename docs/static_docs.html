@@ -336,6 +336,7 @@
                 <li><a href="#calculator">Cost Calculator</a></li>
                 <li><a href="#rubber-stamps">Rubber Stamps</a></li>
                 <li><a href="#examples">Examples</a></li>
+                <li><a href="#playground">API Playground</a></li>
             </ul>
         </div>
     </nav>
@@ -634,7 +635,14 @@
                 </ol>
 
                 <h3>Example: Ordering a GitHub Notebook</h3>
-                <pre><code>curl -X POST https://jenin-mail.hackclub.com/api/v1/order \
+                
+                <div class="tabs">
+                    <div class="tab active" onclick="switchOrderTab('order-curl')">cURL</div>
+                    <div class="tab" onclick="switchOrderTab('order-python')">Python</div>
+                </div>
+
+                <div id="order-curl" class="tab-content active">
+                    <pre><code>curl -X POST https://jenin-mail.hackclub.com/api/v1/order \
   -H "Authorization: Bearer YOUR_EVENT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -648,6 +656,32 @@
     "postal_code": "05482",
     "country": "United States"
   }'</code></pre>
+                </div>
+
+                <div id="order-python" class="tab-content">
+                    <pre><code>import requests
+
+response = requests.post(
+    "https://jenin-mail.hackclub.com/api/v1/order",
+    headers={
+        "Authorization": "Bearer YOUR_EVENT_API_KEY",
+        "Content-Type": "application/json"
+    },
+    json={
+        "order_text": "GitHub Notebook - 1x black hardcover, 100 pages",
+        "first_name": "Orpheus",
+        "last_name": "Hacksworth",
+        "email": "orpheus@hackclub.com",
+        "address_line_1": "123 Hacker Way",
+        "city": "Shelburne",
+        "state": "VT",
+        "postal_code": "05482",
+        "country": "United States"
+    }
+)
+
+print(response.json())</code></pre>
+                </div>
 
                 <h3>Privacy &amp; Security</h3>
                 <p>Shipping addresses are <strong>NEVER stored in the database</strong>. PII is:</p>
@@ -833,6 +867,156 @@ const data = await response.json();
 console.log(data);</code></pre>
                 </div>
             </section>
+
+            <section id="playground">
+                <h2>API Playground</h2>
+                <p>Test the API directly from your browser. Enter your API key and send requests — everything runs locally, nothing is stored.</p>
+
+                <div class="note-box">
+                    <strong>Privacy:</strong> Your API key and request data are only sent directly to the API. Nothing is stored or logged by this page.
+                </div>
+
+                <div class="playground-container" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; margin-top: 24px;">
+                    <div class="form-group">
+                        <label for="api-key">API Key</label>
+                        <input type="password" id="api-key" placeholder="Enter your API key" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="endpoint-select">Endpoint</label>
+                        <select id="endpoint-select" onchange="updatePlaygroundForm()" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            <option value="letters">POST /api/v1/letters - Create Letter</option>
+                            <option value="order">POST /api/v1/order - Create Order</option>
+                            <option value="order-status">GET /api/v1/order/{id}/status - Order Status</option>
+                        </select>
+                    </div>
+
+                    <div id="playground-form-letters" class="playground-form">
+                        <h4 style="margin: 16px 0;">Request Body</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label for="pg-first-name">First Name *</label>
+                                <input type="text" id="pg-first-name" placeholder="John" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-last-name">Last Name *</label>
+                                <input type="text" id="pg-last-name" placeholder="Doe" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="pg-address1">Address Line 1 *</label>
+                                <input type="text" id="pg-address1" placeholder="123 Main St" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="pg-address2">Address Line 2</label>
+                                <input type="text" id="pg-address2" placeholder="Apt 4B" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-city">City *</label>
+                                <input type="text" id="pg-city" placeholder="Burlington" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-state">State/Province *</label>
+                                <input type="text" id="pg-state" placeholder="VT" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-postal">Postal Code *</label>
+                                <input type="text" id="pg-postal" placeholder="05401" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-country">Country *</label>
+                                <input type="text" id="pg-country" placeholder="Canada" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-email">Recipient Email</label>
+                                <input type="email" id="pg-email" placeholder="john@example.com" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-mail-type">Mail Type *</label>
+                                <select id="pg-mail-type" onchange="updateWeightField()" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                                    <option value="lettermail">Lettermail</option>
+                                    <option value="bubble_packet">Bubble Packet</option>
+                                    <option value="parcel">Parcel</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="pg-weight-group" style="display: none;">
+                                <label for="pg-weight">Weight (grams) *</label>
+                                <input type="number" id="pg-weight" placeholder="100" min="1" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="pg-rubber-stamps">Rubber Stamps *</label>
+                                <textarea id="pg-rubber-stamps" rows="3" placeholder="1x pack of stickers&#10;1x Postcard" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); resize: vertical;"></textarea>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="pg-notes">Notes</label>
+                                <input type="text" id="pg-notes" placeholder="Optional notes" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="playground-form-order" class="playground-form" style="display: none;">
+                        <h4 style="margin: 16px 0;">Request Body</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="pg-order-text">Order Text *</label>
+                                <textarea id="pg-order-text" rows="3" placeholder="GitHub Notebook - 1x black hardcover, 100 pages" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); resize: vertical;"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-order-first-name">First Name *</label>
+                                <input type="text" id="pg-order-first-name" placeholder="Orpheus" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-order-last-name">Last Name *</label>
+                                <input type="text" id="pg-order-last-name" placeholder="Hacksworth" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="pg-order-email">Email</label>
+                                <input type="email" id="pg-order-email" placeholder="orpheus@hackclub.com" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="pg-order-address1">Address Line 1 *</label>
+                                <input type="text" id="pg-order-address1" placeholder="123 Hacker Way" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="pg-order-address2">Address Line 2</label>
+                                <input type="text" id="pg-order-address2" placeholder="" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-order-city">City *</label>
+                                <input type="text" id="pg-order-city" placeholder="Shelburne" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-order-state">State/Province *</label>
+                                <input type="text" id="pg-order-state" placeholder="VT" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-order-postal">Postal Code *</label>
+                                <input type="text" id="pg-order-postal" placeholder="05482" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-order-country">Country *</label>
+                                <input type="text" id="pg-order-country" placeholder="United States" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="playground-form-order-status" class="playground-form" style="display: none;">
+                        <h4 style="margin: 16px 0;">Request Parameters</h4>
+                        <div class="form-group">
+                            <label for="pg-order-id">Order ID *</label>
+                            <input type="text" id="pg-order-id" placeholder="aB3xK9m" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        </div>
+                    </div>
+
+                    <button onclick="sendPlaygroundRequest()" id="playground-send-btn" style="width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 16px;">
+                        Send Request
+                    </button>
+
+                    <div id="playground-response" style="display: none; margin-top: 24px;">
+                        <h4 style="margin-bottom: 12px;">Response <span id="response-status" style="font-weight: normal; font-size: 14px;"></span></h4>
+                        <pre id="playground-response-body" style="white-space: pre-wrap; word-wrap: break-word;"><code></code></pre>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -905,11 +1089,156 @@ console.log(data);</code></pre>
         }
 
         function switchTab(tabName) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#examples .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#examples .tab-content').forEach(t => t.classList.remove('active'));
             
             document.querySelector(`.tab-content#${tabName}`).classList.add('active');
             event.target.classList.add('active');
+        }
+
+        function switchOrderTab(tabName) {
+            document.querySelectorAll('#orders .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#orders .tab-content').forEach(t => t.classList.remove('active'));
+            
+            document.querySelector(`.tab-content#${tabName}`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        const API_BASE = 'https://jenin-mail.hackclub.com';
+
+        function updatePlaygroundForm() {
+            const endpoint = document.getElementById('endpoint-select').value;
+            document.querySelectorAll('.playground-form').forEach(f => f.style.display = 'none');
+            
+            if (endpoint === 'letters') {
+                document.getElementById('playground-form-letters').style.display = 'block';
+            } else if (endpoint === 'order') {
+                document.getElementById('playground-form-order').style.display = 'block';
+            } else if (endpoint === 'order-status') {
+                document.getElementById('playground-form-order-status').style.display = 'block';
+            }
+            
+            document.getElementById('playground-response').style.display = 'none';
+        }
+
+        function updateWeightField() {
+            const mailType = document.getElementById('pg-mail-type').value;
+            document.getElementById('pg-weight-group').style.display = 
+                mailType === 'lettermail' ? 'none' : 'block';
+        }
+
+        async function sendPlaygroundRequest() {
+            const apiKey = document.getElementById('api-key').value;
+            const endpoint = document.getElementById('endpoint-select').value;
+            const btn = document.getElementById('playground-send-btn');
+            const responseDiv = document.getElementById('playground-response');
+            const responseBody = document.getElementById('playground-response-body').querySelector('code');
+            const responseStatus = document.getElementById('response-status');
+
+            if (endpoint !== 'order-status' && !apiKey) {
+                alert('Please enter your API key');
+                return;
+            }
+
+            btn.textContent = 'Sending...';
+            btn.disabled = true;
+
+            try {
+                let url, method, body, headers = {};
+
+                if (endpoint === 'letters') {
+                    url = `${API_BASE}/api/v1/letters`;
+                    method = 'POST';
+                    headers = {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    };
+                    const data = {
+                        first_name: document.getElementById('pg-first-name').value,
+                        last_name: document.getElementById('pg-last-name').value,
+                        address_line_1: document.getElementById('pg-address1').value,
+                        city: document.getElementById('pg-city').value,
+                        state: document.getElementById('pg-state').value,
+                        postal_code: document.getElementById('pg-postal').value,
+                        country: document.getElementById('pg-country').value,
+                        mail_type: document.getElementById('pg-mail-type').value,
+                        rubber_stamps: document.getElementById('pg-rubber-stamps').value
+                    };
+                    
+                    const address2 = document.getElementById('pg-address2').value;
+                    if (address2) data.address_line_2 = address2;
+                    
+                    const email = document.getElementById('pg-email').value;
+                    if (email) data.recipient_email = email;
+                    
+                    const notes = document.getElementById('pg-notes').value;
+                    if (notes) data.notes = notes;
+                    
+                    const mailType = document.getElementById('pg-mail-type').value;
+                    if (mailType !== 'lettermail') {
+                        const weight = document.getElementById('pg-weight').value;
+                        if (weight) data.weight_grams = parseInt(weight);
+                    }
+                    
+                    body = JSON.stringify(data);
+                } else if (endpoint === 'order') {
+                    url = `${API_BASE}/api/v1/order`;
+                    method = 'POST';
+                    headers = {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    };
+                    const data = {
+                        order_text: document.getElementById('pg-order-text').value,
+                        first_name: document.getElementById('pg-order-first-name').value,
+                        last_name: document.getElementById('pg-order-last-name').value,
+                        address_line_1: document.getElementById('pg-order-address1').value,
+                        city: document.getElementById('pg-order-city').value,
+                        state: document.getElementById('pg-order-state').value,
+                        postal_code: document.getElementById('pg-order-postal').value,
+                        country: document.getElementById('pg-order-country').value
+                    };
+                    
+                    const address2 = document.getElementById('pg-order-address2').value;
+                    if (address2) data.address_line_2 = address2;
+                    
+                    const email = document.getElementById('pg-order-email').value;
+                    if (email) data.email = email;
+                    
+                    body = JSON.stringify(data);
+                } else if (endpoint === 'order-status') {
+                    const orderId = document.getElementById('pg-order-id').value;
+                    if (!orderId) {
+                        alert('Please enter an order ID');
+                        btn.textContent = 'Send Request';
+                        btn.disabled = false;
+                        return;
+                    }
+                    url = `${API_BASE}/api/v1/order/${orderId}/status`;
+                    method = 'GET';
+                }
+
+                const response = await fetch(url, {
+                    method,
+                    headers,
+                    body
+                });
+
+                const responseData = await response.json();
+                
+                responseStatus.textContent = `(${response.status} ${response.statusText})`;
+                responseStatus.style.color = response.ok ? 'var(--success-color)' : 'var(--error-color)';
+                responseBody.textContent = JSON.stringify(responseData, null, 2);
+                responseDiv.style.display = 'block';
+            } catch (error) {
+                responseStatus.textContent = '(Error)';
+                responseStatus.style.color = 'var(--error-color)';
+                responseBody.textContent = error.message;
+                responseDiv.style.display = 'block';
+            } finally {
+                btn.textContent = 'Send Request';
+                btn.disabled = false;
+            }
         }
     </script>
 </body>

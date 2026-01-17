@@ -728,6 +728,7 @@ class SlackBot:
                     "element": {
                         "type": "plain_text_input",
                         "action_id": "tracking_code",
+                        "max_length": 64,
                         "placeholder": {
                             "type": "plain_text",
                             "text": "Enter tracking code (optional)"
@@ -746,6 +747,7 @@ class SlackBot:
                         "type": "plain_text_input",
                         "action_id": "fulfillment_note",
                         "multiline": True,
+                        "max_length": 500,
                         "placeholder": {
                             "type": "plain_text",
                             "text": "Enter any notes (optional)"
@@ -799,6 +801,8 @@ class SlackBot:
                         "type": "plain_text_input",
                         "action_id": "tracking_code",
                         "initial_value": current_tracking or "",
+                        "min_length": 1,
+                        "max_length": 64,
                         "placeholder": {
                             "type": "plain_text",
                             "text": "Enter new tracking code"
