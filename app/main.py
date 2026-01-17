@@ -601,7 +601,7 @@ async def get_order_status_page(
         </div>
         """
     
-    html = f"""
+    html_content = f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -704,7 +704,7 @@ async def get_order_status_page(
     </html>
     """
     
-    return HTMLResponse(content=html)
+    return HTMLResponse(content=html_content)
 
 
 @app.get("/api/v1/order/{order_id}/status", response_model=OrderStatusResponse)
