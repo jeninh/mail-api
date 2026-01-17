@@ -578,10 +578,10 @@ async def get_order_status_page(
     
     if order.status == OrderStatus.PENDING:
         status_html = """
-        <div class="status pending">
+        <div class="card sunken">
             <div class="status-icon">⏳</div>
             <h2>Pending</h2>
-            <p>Your order is being processed.</p>
+            <p class="caption">Your order is being processed.</p>
         </div>
         """
     else:
@@ -594,7 +594,7 @@ async def get_order_status_page(
             fulfillment_info += f'<p class="tracking">Tracking: <code>{escaped_tracking}</code></p>'
         
         status_html = f"""
-        <div class="status fulfilled">
+        <div class="card sunken">
             <div class="status-icon">✅</div>
             <h2>Fulfilled</h2>
             {fulfillment_info}
@@ -607,99 +607,49 @@ async def get_order_status_page(
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Order Status - {escaped_order_id}</title>
+        <title>Order {escaped_order_id}</title>
+        <link rel="stylesheet" href="https://css.hackclub.com/theme.css">
         <style>
-            * {{
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }}
             body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 min-height: 100vh;
                 display: flex;
-                justify-content: center;
+                flex-direction: column;
                 align-items: center;
-                padding: 20px;
-            }}
-            .container {{
-                background: white;
-                border-radius: 16px;
-                padding: 40px;
-                max-width: 400px;
-                width: 100%;
-                text-align: center;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            }}
-            h1 {{
-                font-size: 14px;
-                color: #666;
-                text-transform: uppercase;
-                letter-spacing: 2px;
-                margin-bottom: 20px;
+                justify-content: center;
+                padding: 2rem;
             }}
             .order-id {{
-                font-family: monospace;
-                font-size: 24px;
-                color: #333;
-                margin-bottom: 30px;
-            }}
-            .status {{
-                padding: 20px;
-                border-radius: 12px;
+                font-family: var(--font-mono);
+                font-size: 1.5rem;
+                color: var(--muted);
+                margin-bottom: 1.5rem;
             }}
             .status-icon {{
-                font-size: 48px;
-                margin-bottom: 10px;
+                font-size: 3rem;
+                margin-bottom: 0.5rem;
             }}
-            .status h2 {{
-                font-size: 28px;
-                margin-bottom: 10px;
-            }}
-            .status p {{
-                color: #666;
-            }}
-            .pending {{
-                background: #fff3cd;
-            }}
-            .pending h2 {{
-                color: #856404;
-            }}
-            .fulfilled {{
-                background: #d4edda;
-            }}
-            .fulfilled h2 {{
-                color: #155724;
-            }}
-            .tracking {{
-                margin-top: 15px;
-                font-size: 14px;
+            .note, .tracking {{
+                margin-top: 1rem;
+                color: var(--slate);
             }}
             .tracking code {{
-                background: #f8f9fa;
-                padding: 4px 8px;
+                background: var(--sunken);
+                padding: 0.25rem 0.5rem;
                 border-radius: 4px;
-                font-size: 16px;
             }}
-            .note {{
-                margin-top: 15px;
-                font-style: italic;
-            }}
-            .footer {{
-                margin-top: 30px;
-                font-size: 12px;
-                color: #999;
+            footer {{
+                margin-top: 2rem;
+                color: var(--muted);
             }}
         </style>
     </head>
     <body>
-        <div class="container">
-            <h1>Order Status</h1>
+        <main class="container narrow" style="text-align: center;">
+            <p class="eyebrow">Order Status</p>
             <div class="order-id">{escaped_order_id}</div>
             {status_html}
-            <div class="footer">Hack Club Mail</div>
-        </div>
+            <footer class="caption">Hack Club Mail</footer>
+        </main>
     </body>
     </html>
     """
