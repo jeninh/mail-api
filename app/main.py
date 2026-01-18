@@ -673,6 +673,7 @@ async def get_order_status_page(
             <p class="eyebrow">Order Status</p>
             <div class="order-id">{escaped_order_id}</div>
             {status_html}
+            <p class="caption" style="margin-top: 1.5rem;">Come back here for updates on your order.</p>
             <footer class="caption">Jenin's Mail Service</footer>
         </main>
     </body>
