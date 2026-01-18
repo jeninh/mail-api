@@ -22,7 +22,7 @@ bolt_app = AsyncApp(
 )
 
 
-@bolt_app.action({"action_id": re.compile(r"^mark_mailed:")})
+@bolt_app.action(re.compile(r"^mark_mailed:"))
 async def handle_mark_mailed(ack, body, action):
     """Handle the 'Mark as Mailed' button click via Socket Mode."""
     await ack()
@@ -81,7 +81,7 @@ def get_order_status_url(order_id: str) -> str:
     return f"https://jenin-mail.hackclub.com/odr!{order_id}"
 
 
-@bolt_app.action({"action_id": re.compile(r"^fulfill_order:")})
+@bolt_app.action(re.compile(r"^fulfill_order:"))
 async def handle_fulfill_order(ack, body, action):
     """Handle the 'Fulfill Order' button click via Socket Mode."""
     await ack()
@@ -97,7 +97,7 @@ async def handle_fulfill_order(ack, body, action):
         await slack_bot.open_fulfill_order_modal(trigger_id, order_id)
 
 
-@bolt_app.action({"action_id": re.compile(r"^update_tracking:")})
+@bolt_app.action(re.compile(r"^update_tracking:"))
 async def handle_update_tracking(ack, body, action):
     """Handle the 'Update Tracking' button click via Socket Mode."""
     await ack()
