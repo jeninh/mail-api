@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import AsyncSessionLocal
-from app.models import Letter, Event, LetterStatus
+from app.models import Letter, Event, LetterStatus, Order, OrderStatus
 from app.slack_bot import slack_bot
 from app.theseus_client import theseus_client, TheseusAPIError
 
@@ -76,6 +76,11 @@ async def handle_mark_mailed(ack, body, action):
         logger.info(f"Letter {letter_id} marked as mailed via Socket Mode")
 
 
+def get_order_status_url(order_id: str) -> str:
+    """Get the public status URL for an order."""
+    return f"https://jenin-mail.hackclub.com/odr!{order_id}"
+
+
 @bolt_app.action({"action_id": re.compile(r"^fulfill_order:")})
 async def handle_fulfill_order(ack, body, action):
     """Handle the 'Fulfill Order' button click via Socket Mode."""
@@ -90,6 +95,132 @@ async def handle_fulfill_order(ack, body, action):
     
     if trigger_id:
         await slack_bot.open_fulfill_order_modal(trigger_id, order_id)
+
+
+@bolt_app.action({"action_id": re.compile(r"^update_tracking:")})
+async def handle_update_tracking(ack, body, action):
+    """Handle the 'Update Tracking' button click via Socket Mode."""
+    await ack()
+    
+    action_id = action.get("action_id", "")
+    if not action_id.startswith("update_tracking:"):
+        return
+    
+    order_id = action_id.replace("update_tracking:", "")
+    trigger_id = body.get("trigger_id")
+    
+    if trigger_id:
+        async with AsyncSessionLocal() as db:
+            stmt = select(Order).where(Order.order_id == order_id)
+            result = await db.execute(stmt)
+            order = result.scalar_one_or_none()
+            
+            if order:
+                await slack_bot.open_update_tracking_modal(
+                    trigger_id, 
+                    order_id, 
+                    order.tracking_code
+                )
+
+
+@bolt_app.view({"callback_id": re.compile(r"^fulfill_order_modal:")})
+async def handle_fulfill_order_modal(ack, body, view):
+    """Handle the fulfill order modal submission via Socket Mode."""
+    callback_id = view.get("callback_id", "")
+    order_id = callback_id.replace("fulfill_order_modal:", "")
+    values = view.get("state", {}).get("values", {})
+    
+    tracking_code = values.get("tracking_code_block", {}).get("tracking_code", {}).get("value")
+    fulfillment_note = values.get("fulfillment_note_block", {}).get("fulfillment_note", {}).get("value")
+    
+    errors = {}
+    if tracking_code and len(tracking_code) > 64:
+        errors["tracking_code_block"] = "Tracking code must be 64 characters or less"
+    if fulfillment_note and len(fulfillment_note) > 500:
+        errors["fulfillment_note_block"] = "Note must be 500 characters or less"
+    if errors:
+        await ack(response_action="errors", errors=errors)
+        return
+    
+    await ack()
+    
+    async with AsyncSessionLocal() as db:
+        stmt = select(Order).where(Order.order_id == order_id)
+        result = await db.execute(stmt)
+        order = result.scalar_one_or_none()
+        
+        if order:
+            order.status = OrderStatus.FULFILLED
+            order.fulfilled_at = datetime.utcnow()
+            order.tracking_code = tracking_code
+            order.fulfillment_note = fulfillment_note
+            
+            event_stmt = select(Event).where(Event.id == order.event_id)
+            event_result = await db.execute(event_stmt)
+            event = event_result.scalar_one_or_none()
+            
+            if event and order.slack_message_ts and order.slack_channel_id:
+                await slack_bot.update_order_fulfilled(
+                    channel_id=order.slack_channel_id,
+                    message_ts=order.slack_message_ts,
+                    event_name=event.name,
+                    order_id=order.order_id,
+                    order_text=order.order_text,
+                    status_url=get_order_status_url(order.order_id),
+                    tracking_code=order.tracking_code,
+                    fulfillment_note=order.fulfillment_note,
+                    fulfilled_at=order.fulfilled_at
+                )
+            
+            await db.commit()
+            logger.info(f"Order {order_id} fulfilled via Socket Mode")
+
+
+@bolt_app.view({"callback_id": re.compile(r"^update_tracking_modal:")})
+async def handle_update_tracking_modal(ack, body, view):
+    """Handle the update tracking modal submission via Socket Mode."""
+    callback_id = view.get("callback_id", "")
+    order_id = callback_id.replace("update_tracking_modal:", "")
+    values = view.get("state", {}).get("values", {})
+    
+    tracking_code = values.get("tracking_code_block", {}).get("tracking_code", {}).get("value")
+    
+    if not tracking_code or len(tracking_code) < 1:
+        await ack(response_action="errors", errors={"tracking_code_block": "Tracking code is required"})
+        return
+    if len(tracking_code) > 64:
+        await ack(response_action="errors", errors={"tracking_code_block": "Tracking code must be 64 characters or less"})
+        return
+    
+    await ack()
+    
+    async with AsyncSessionLocal() as db:
+        stmt = select(Order).where(Order.order_id == order_id)
+        result = await db.execute(stmt)
+        order = result.scalar_one_or_none()
+        
+        if order:
+            order.tracking_code = tracking_code
+            
+            event_stmt = select(Event).where(Event.id == order.event_id)
+            event_result = await db.execute(event_stmt)
+            event = event_result.scalar_one_or_none()
+            
+            if event and order.slack_message_ts and order.slack_channel_id:
+                await slack_bot.update_order_fulfilled(
+                    channel_id=order.slack_channel_id,
+                    message_ts=order.slack_message_ts,
+                    event_name=event.name,
+                    order_id=order.order_id,
+                    order_text=order.order_text,
+                    status_url=get_order_status_url(order.order_id),
+                    tracking_code=order.tracking_code,
+                    fulfillment_note=order.fulfillment_note,
+                    fulfilled_at=order.fulfilled_at
+                )
+            
+            await db.commit()
+            logger.info(f"Order {order_id} tracking updated via Socket Mode")
 
 
 @bolt_app.command("/jenin-mail")
