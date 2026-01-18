@@ -76,6 +76,22 @@ async def handle_mark_mailed(ack, body, action):
         logger.info(f"Letter {letter_id} marked as mailed via Socket Mode")
 
 
+@bolt_app.action({"action_id": re.compile(r"^fulfill_order:")})
+async def handle_fulfill_order(ack, body, action):
+    """Handle the 'Fulfill Order' button click via Socket Mode."""
+    await ack()
+    
+    action_id = action.get("action_id", "")
+    if not action_id.startswith("fulfill_order:"):
+        return
+    
+    order_id = action_id.replace("fulfill_order:", "")
+    trigger_id = body.get("trigger_id")
+    
+    if trigger_id:
+        await slack_bot.open_fulfill_order_modal(trigger_id, order_id)
+
+
 @bolt_app.command("/jenin-mail")
 async def handle_jenin_mail_command(ack, body, client, respond):
     """Handle the /jenin-mail slash command."""
