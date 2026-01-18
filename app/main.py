@@ -524,6 +524,13 @@ async def create_order(
     db.add(order)
     await db.flush()
     
+    # Add $1 fee (100 cents) to event's balance
+    await db.execute(
+        update(Event)
+        .where(Event.id == event.id)
+        .values(balance_due_cents=Event.balance_due_cents + 100)
+    )
+    
     try:
         message_ts, channel_id = await slack_bot.send_order_notification(
             event_name=event.name,
@@ -861,65 +868,66 @@ async def handle_slack_interactions(
             
             return JSONResponse(content={"response_action": "clear"})
     
-    actions = payload.get("actions", [])
-    trigger_id = payload.get("trigger_id")
-    
-    for action in actions:
-        action_id = action.get("action_id", "")
+    if payload_type == "block_actions":
+        actions = payload.get("actions", [])
+        trigger_id = payload.get("trigger_id")
         
-        if action_id.startswith("mark_mailed:"):
-            letter_id = action_id.replace("mark_mailed:", "")
+        for action in actions:
+            action_id = action.get("action_id", "")
             
-            stmt = select(Letter).where(Letter.letter_id == letter_id)
-            result = await db.execute(stmt)
-            letter = result.scalar_one_or_none()
+            if action_id.startswith("mark_mailed:"):
+                letter_id = action_id.replace("mark_mailed:", "")
+                
+                stmt = select(Letter).where(Letter.letter_id == letter_id)
+                result = await db.execute(stmt)
+                letter = result.scalar_one_or_none()
+                
+                if letter:
+                    try:
+                        await theseus_client.mark_letter_mailed(letter.letter_id)
+                    except TheseusAPIError as e:
+                        logger.error(f"Failed to mark letter {letter.letter_id} as mailed in Theseus: {e}")
+                    
+                    letter.status = LetterStatus.SHIPPED
+                    letter.mailed_at = datetime.utcnow()
+                    
+                    event_stmt = select(Event).where(Event.id == letter.event_id)
+                    event_result = await db.execute(event_stmt)
+                    event = event_result.scalar_one_or_none()
+                    
+                    if event and letter.slack_message_ts and letter.slack_channel_id:
+                        await slack_bot.update_letter_shipped(
+                            channel_id=letter.slack_channel_id,
+                            message_ts=letter.slack_message_ts,
+                            event_name=event.name,
+                            queue_name=event.theseus_queue,
+                            recipient_name=f"{letter.first_name} {letter.last_name}",
+                            country=letter.country,
+                            rubber_stamps_raw=letter.rubber_stamps_raw,
+                            cost_cents=letter.cost_cents,
+                            letter_id=letter.letter_id,
+                            mailed_at=letter.mailed_at
+                        )
+                    
+                    await db.commit()
             
-            if letter:
-                try:
-                    await theseus_client.mark_letter_mailed(letter.letter_id)
-                except TheseusAPIError as e:
-                    logger.error(f"Failed to mark letter {letter.letter_id} as mailed in Theseus: {e}")
+            elif action_id.startswith("fulfill_order:"):
+                order_id = action_id.replace("fulfill_order:", "")
+                if trigger_id:
+                    await slack_bot.open_fulfill_order_modal(trigger_id, order_id)
+            
+            elif action_id.startswith("update_tracking:"):
+                order_id = action_id.replace("update_tracking:", "")
+                stmt = select(Order).where(Order.order_id == order_id)
+                result = await db.execute(stmt)
+                order = result.scalar_one_or_none()
                 
-                letter.status = LetterStatus.SHIPPED
-                letter.mailed_at = datetime.utcnow()
-                
-                event_stmt = select(Event).where(Event.id == letter.event_id)
-                event_result = await db.execute(event_stmt)
-                event = event_result.scalar_one_or_none()
-                
-                if event and letter.slack_message_ts and letter.slack_channel_id:
-                    await slack_bot.update_letter_shipped(
-                        channel_id=letter.slack_channel_id,
-                        message_ts=letter.slack_message_ts,
-                        event_name=event.name,
-                        queue_name=event.theseus_queue,
-                        recipient_name=f"{letter.first_name} {letter.last_name}",
-                        country=letter.country,
-                        rubber_stamps_raw=letter.rubber_stamps_raw,
-                        cost_cents=letter.cost_cents,
-                        letter_id=letter.letter_id,
-                        mailed_at=letter.mailed_at
+                if trigger_id and order:
+                    await slack_bot.open_update_tracking_modal(
+                        trigger_id, 
+                        order_id, 
+                        order.tracking_code
                     )
-                
-                await db.commit()
-        
-        elif action_id.startswith("fulfill_order:"):
-            order_id = action_id.replace("fulfill_order:", "")
-            if trigger_id:
-                await slack_bot.open_fulfill_order_modal(trigger_id, order_id)
-        
-        elif action_id.startswith("update_tracking:"):
-            order_id = action_id.replace("update_tracking:", "")
-            stmt = select(Order).where(Order.order_id == order_id)
-            result = await db.execute(stmt)
-            order = result.scalar_one_or_none()
-            
-            if trigger_id and order:
-                await slack_bot.open_update_tracking_modal(
-                    trigger_id, 
-                    order_id, 
-                    order.tracking_code
-                )
     
     return JSONResponse(content={"ok": True})
 
