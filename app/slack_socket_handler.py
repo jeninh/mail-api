@@ -123,7 +123,7 @@ async def handle_update_tracking(ack, body, action):
                 )
 
 
-@bolt_app.view({"callback_id": re.compile(r"^fulfill_order_modal:")})
+@bolt_app.view(re.compile(r"^fulfill_order_modal:"))
 async def handle_fulfill_order_modal(ack, body, view):
     """Handle the fulfill order modal submission via Socket Mode."""
     callback_id = view.get("callback_id", "")
