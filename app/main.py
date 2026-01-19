@@ -493,42 +493,67 @@ def get_order_status_url(order_id: str) -> str:
 
 
 def get_404_html(title: str = "Page Not Found", message: str = "The page you're looking for doesn't exist.") -> str:
-    """Generate a styled 404 HTML page."""
+    """Generate a styled 404 HTML page matching the odr! page style."""
     return f"""
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="en" data-theme="dark">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="dark">
         <title>404 - {title}</title>
-        <link rel="stylesheet" href="https://unpkg.com/hackclub-hack.css">
+        <link rel="stylesheet" href="https://css.hackclub.com/theme.css">
         <style>
+            :root {{
+                --bg: #121217;
+                --card-bg: #1e1e24;
+                --red: #ec3750;
+            }}
             body {{
+                background: var(--bg);
+                color: #fff;
                 min-height: 100vh;
                 display: flex;
-                justify-content: center;
+                flex-direction: column;
                 align-items: center;
-                padding: 20px;
+                justify-content: center;
+                padding: 2rem;
             }}
-            .container {{
-                max-width: 400px;
-                width: 100%;
-                text-align: center;
+            .eyebrow {{
+                color: var(--red);
+            }}
+            .card {{
+                background: var(--card-bg);
+                border: 1px solid #333;
+                padding: 2rem;
+                border-radius: 0;
             }}
             .status-icon {{
-                font-size: 64px;
-                margin-bottom: 20px;
+                font-size: 3rem;
+                margin-bottom: 0.5rem;
+            }}
+            h2 {{
+                color: #fff;
+            }}
+            .caption {{
+                color: #888;
+            }}
+            footer {{
+                margin-top: 2rem;
+                color: #666;
             }}
         </style>
     </head>
     <body>
-        <div class="container">
-            <div class="card">
+        <main class="container narrow" style="text-align: center;">
+            <p class="eyebrow">404</p>
+            <div class="card sunken">
                 <div class="status-icon">🔍</div>
-                <h1>{title}</h1>
-                <p>{message}</p>
+                <h2>{title}</h2>
+                <p class="caption">{message}</p>
             </div>
-        </div>
+            <footer class="caption">Jenin's Mail Service</footer>
+        </main>
     </body>
     </html>
     """
