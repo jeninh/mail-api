@@ -492,6 +492,48 @@ def get_order_status_url(order_id: str) -> str:
     return f"https://jenin-mail.hackclub.com/odr!{order_id}"
 
 
+def get_404_html(title: str = "Page Not Found", message: str = "The page you're looking for doesn't exist.") -> str:
+    """Generate a styled 404 HTML page."""
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>404 - {title}</title>
+        <link rel="stylesheet" href="https://unpkg.com/hackclub-hack.css">
+        <style>
+            body {{
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 400px;
+                width: 100%;
+                text-align: center;
+            }}
+            .status-icon {{
+                font-size: 64px;
+                margin-bottom: 20px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="card">
+                <div class="status-icon">🔍</div>
+                <h1>{title}</h1>
+                <p>{message}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+
 @app.post("/api/v1/order", response_model=OrderResponse, responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}})
 async def create_order(
     request: OrderCreate,
@@ -579,7 +621,7 @@ async def get_order_status_page(
     order = result.scalar_one_or_none()
     
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        return HTMLResponse(content=get_404_html("Order Not Found", "This order does not exist or the link is invalid."), status_code=404)
     
     escaped_order_id = html.escape(order_id)
     
@@ -673,7 +715,7 @@ async def get_order_status_page(
             <p class="eyebrow">Order Status</p>
             <div class="order-id">{escaped_order_id}</div>
             {status_html}
-            <p class="caption" style="margin-top: 1.5rem;">Come back here for updates on your order.</p>
+            <p class="caption" style="margin-top: 1.5rem;">You can come back to this page at any time to view your pending orders. You can also visit this page via <a href="https://hack.club/odr!{escaped_order_id}" style="color: var(--green);">hack.club/odr!{escaped_order_id}</a></p>
             <footer class="caption">Jenin's Mail Service</footer>
         </main>
     </body>
@@ -956,3 +998,20 @@ async def get_docs_page(request: Request):
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Documentation not found")
+
+
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def catch_all_404(path: str, request: Request):
+    """Catch-all route for undefined paths - returns proper 404."""
+    accept_header = request.headers.get("accept", "")
+    
+    if "text/html" in accept_header:
+        return HTMLResponse(
+            content=get_404_html("Page Not Found", "The page you're looking for doesn't exist."),
+            status_code=404
+        )
+    
+    return JSONResponse(
+        content={"detail": "Not Found", "path": f"/{path}"},
+        status_code=404
+    )
