@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Theseus Mail API Documentation</title>
+    <title>Hermes API Documentation</title>
     <style>
         :root {
             --bg-primary: #ffffff;
@@ -321,7 +321,7 @@
 <body>
     <header>
         <div class="container header-content">
-            <div class="logo">Theseus Mail API</div>
+            <div class="logo">Hermes</div>
             <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
         </div>
     </header>
@@ -344,7 +344,7 @@
     <main>
         <div class="container">
             <section id="overview">
-                <h1>Theseus Mail API</h1>
+                <h1>Hermes</h1>
                 <p>A wrapper API for Hack Club's Theseus mail system. Create letters, track costs, and manage events with ease.</p>
             </section>
 
@@ -501,7 +501,7 @@
 
                 <div class="endpoint">
                     <h3><span class="method post">POST</span><span class="path">/api/v1/order</span></h3>
-                    <p>Create a new order request. Jenin will order from a local carrier and ship to the recipient. Charged to your event's HCB. <strong>$1 fee per item.</strong></p>
+                    <p>Create a new order request. Hermes will order from a local carrier and ship to the recipient. Charged to your event's HCB. <strong>$1 fee per item.</strong></p>
                     
                     <h4>Request Body</h4>
                     <table>
@@ -566,14 +566,14 @@
                     <pre><code>{
   "order_id": "aB3xK9m",
   "status": "pending",
-  "status_url": "https://jenin-mail.hackclub.com/odr!aB3xK9m",
+  "status_url": "https://fulfillment.hackclub.com/odr!aB3xK9m",
   "created_at": "2025-01-16T10:30:00Z",
   "email_sent": true
 }</code></pre>
                     <p><em>A confirmation email will be sent to the recipient if an email address was provided.</em></p>
 
                     <h4>Example: GitHub Notebook</h4>
-                    <pre><code>curl -X POST https://jenin-mail.hackclub.com/api/v1/order \
+                    <pre><code>curl -X POST https://fulfillment.hackclub.com/api/v1/order \
   -H "Authorization: Bearer YOUR_EVENT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -618,7 +618,7 @@
 
             <section id="orders">
                 <h2>Orders</h2>
-                <p>The Orders API allows you to request items that Jenin will order from a local carrier and ship to the recipient. Orders are charged to your event's HCB account.</p>
+                <p>The Orders API allows you to request items that Hermes will order from a local carrier and ship to the recipient. Orders are charged to your event's HCB account.</p>
 
                 <div class="note-box">
                     <strong>💵 Pricing:</strong> There is a <strong>$1 fee per item</strong> ordered, plus actual shipping costs. All charges go to your event's HCB.
@@ -631,9 +631,9 @@
                 <h3>Order Flow</h3>
                 <ol style="margin-left: 24px; margin-bottom: 16px;">
                     <li>Send a POST request to <code class="inline-code">/api/v1/order</code> with order details and shipping address</li>
-                    <li>Receive an order ID and status URL (e.g., <code class="inline-code">jenin-mail.hackclub.com/odr!aB3xK9m</code>)</li>
+                    <li>Receive an order ID and status URL (e.g., <code class="inline-code">fulfillment.hackclub.com/odr!aB3xK9m</code>)</li>
                     <li>Share the status URL with the recipient</li>
-                    <li>Jenin orders items from local carrier and ships to the provided address</li>
+                    <li>Hermes orders items from local carrier and ships to the provided address</li>
                     <li>Costs are charged to your event's HCB account</li>
                     <li>Once fulfilled, status page shows tracking code and notes</li>
                 </ol>
@@ -646,7 +646,7 @@
                 </div>
 
                 <div id="order-curl" class="tab-content active">
-                    <pre><code>curl -X POST https://jenin-mail.hackclub.com/api/v1/order \
+                    <pre><code>curl -X POST https://fulfillment.hackclub.com/api/v1/order \
   -H "Authorization: Bearer YOUR_EVENT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -666,7 +666,7 @@
                     <pre><code>import requests
 
 response = requests.post(
-    "https://jenin-mail.hackclub.com/api/v1/order",
+    "https://fulfillment.hackclub.com/api/v1/order",
     headers={
         "Authorization": "Bearer YOUR_EVENT_API_KEY",
         "Content-Type": "application/json"
@@ -1108,7 +1108,7 @@ console.log(data);</code></pre>
             event.target.classList.add('active');
         }
 
-        const API_BASE = 'https://jenin-mail.hackclub.com';
+        const API_BASE = 'https://fulfillment.hackclub.com';
 
         function updatePlaygroundForm() {
             const endpoint = document.getElementById('endpoint-select').value;

@@ -78,7 +78,7 @@ async def handle_mark_mailed(ack, body, action):
 
 def get_order_status_url(order_id: str) -> str:
     """Get the public status URL for an order."""
-    return f"https://jenin-mail.hackclub.com/odr!{order_id}"
+    return f"https://fulfillment.hackclub.com/odr!{order_id}"
 
 
 @bolt_app.action(re.compile(r"^fulfill_order:"))
@@ -223,15 +223,15 @@ async def handle_update_tracking_modal(ack, body, view):
             logger.info(f"Order {order_id} tracking updated via Socket Mode")
 
 
-@bolt_app.command("/jenin-mail")
-async def handle_jenin_mail_command(ack, body, client, respond):
-    """Handle the /jenin-mail slash command."""
+@bolt_app.command("/hermes")
+async def handle_hermes_command(ack, body, client, respond):
+    """Handle the /hermes slash command."""
     await ack()
     user_id = body.get("user_id", "unknown")
     trigger_id = body.get("trigger_id")
     text = body.get("text", "").strip().lower()
     
-    logger.info(f"/jenin-mail command from {user_id}: {text}")
+    logger.info(f"/hermes command from {user_id}: {text}")
     
     if user_id != settings.slack_jenin_user_id:
         await respond(response_type="ephemeral", text="Unauthorized")
@@ -251,10 +251,10 @@ async def handle_jenin_mail_command(ack, body, client, respond):
             text=(
                 "❓ *Unknown Command*\n\n"
                 "Available commands:\n"
-                "• `/jenin-mail summary` - View unmailed letters by program & region\n"
-                "• `/jenin-mail financial` - View unpaid balances\n"
-                "• `/jenin-mail paid` - Mark an event as paid\n"
-                "• `/jenin-mail status` - Check system status"
+                "• `/hermes summary` - View unmailed letters by program & region\n"
+                "• `/hermes financial` - View unpaid balances\n"
+                "• `/hermes paid` - Mark an event as paid\n"
+                "• `/hermes status` - Check system status"
             )
         )
 

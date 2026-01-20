@@ -188,7 +188,7 @@ The `rubber_stamps` field specifies what items should be packed in the envelope.
 | ≤500g | $24.85 |
 
 ### Parcel
-Custom quote required - contact @jenin on Slack.
+Custom quote required - contact @hermes on Slack.
 
 ## Slack Bot Setup
 

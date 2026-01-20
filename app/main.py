@@ -242,7 +242,7 @@ async def create_letter(
         if request.mail_type == MailType.BUBBLE_PACKET and request.weight_grams and request.weight_grams > 500:
             raise HTTPException(
                 status_code=400,
-                detail="Weight exceeds 500g for bubble packets. A parcel is needed. Please DM @jenin on Slack or email jenin@hackclub.com for rates."
+                detail="Weight exceeds 500g for bubble packets. A parcel is needed. Please DM @jenin on Slack for rates."
             )
         
         cost_cents = calculate_cost(
@@ -286,7 +286,7 @@ async def create_letter(
         )
         raise HTTPException(
             status_code=502,
-            detail="Mail service temporarily unavailable. Please DM @jenin on Slack."
+            detail="Mail service temporarily unavailable. Please DM @hermes on Slack."
         )
     
     letter_id = theseus_response.get("id")
@@ -512,7 +512,7 @@ def generate_order_id() -> str:
 
 def get_order_status_url(order_id: str) -> str:
     """Get the public status URL for an order."""
-    return f"https://jenin-mail.hackclub.com/odr!{order_id}"
+    return f"https://fulfillment.hackclub.com/odr!{order_id}"
 
 
 def get_404_html(title: str = "Page Not Found", message: str = "The page you're looking for doesn't exist.") -> str:
@@ -575,7 +575,7 @@ def get_404_html(title: str = "Page Not Found", message: str = "The page you're 
                 <h2>{title}</h2>
                 <p class="caption">{message}</p>
             </div>
-            <footer class="caption">Jenin's Mail Service</footer>
+            <footer class="caption">Hermes Mail Service</footer>
         </main>
     </body>
     </html>
@@ -592,7 +592,7 @@ async def create_order(
     Create a new order request.
     
     Requires a valid event API key in the Authorization header.
-    Orders are fulfilled by Jenin via local carrier and charged to the event's HCB.
+    Orders are fulfilled by Hermes via local carrier and charged to the event's HCB.
     There is a $1 fee per item ordered.
     """
     order_id = generate_order_id()
@@ -786,7 +786,7 @@ async def get_order_status_page(
             <div class="order-id">{escaped_order_id}</div>
             {status_html}
             <p class="caption" style="margin-top: 1.5rem;">You can come back to this page at any time to view your pending orders. You can also visit this page via <a href="https://hack.club/odr!{escaped_order_id}" style="color: var(--green);">hack.club/odr!{escaped_order_id}</a></p>
-            <footer class="caption">Jenin's Mail Service</footer>
+            <footer class="caption">Hermes by Jenin · <a href="mailto:hermes@hackclub.com" style="color: inherit;">Support</a></footer>
         </main>
     </body>
     </html>

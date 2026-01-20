@@ -37,7 +37,7 @@ def calculate_bubble_packet_cost(country: str, weight_grams: int) -> int:
     if weight_grams > 500:
         raise CostCalculationError(
             "Weight exceeds 500g for bubble packets. A parcel is needed. "
-            "Please DM @jenin on Slack or email jenin@hackclub.com for rates."
+            "Please DM @jenin on Slack for rates."
         )
     
     country_lower = country.lower().strip()
@@ -73,7 +73,7 @@ def calculate_bubble_packet_cost(country: str, weight_grams: int) -> int:
 
 def calculate_parcel_cost(weight_grams: int, country: str) -> int:
     """
-    Parcels require a custom quote from Jenin.
+    Parcels require a custom quote from Hermes.
     Raises ParcelQuoteRequired exception.
     """
     raise ParcelQuoteRequired(
