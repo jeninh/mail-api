@@ -9,6 +9,7 @@ A FastAPI-based wrapper API for [Theseus](https://mail.hackclub.com) (Hack Club'
 - **Slack integration**: Real-time notifications, financial canvas updates, and interactive buttons
 - **Background jobs**: Hourly status checks for pending letters
 - **Admin tools**: Financial summaries and payment tracking
+- **Email notifications**: Automatic confirmation emails via Airtable automation when letters/orders are placed
 
 ## Quick Start
 
@@ -85,6 +86,7 @@ docker run -p 8000:8000 --env-file .env theseus-wrapper
 | `SLACK_NOTIFICATION_CHANNEL` | Channel ID for notifications | Yes |
 | `SLACK_CANVAS_ID` | Canvas ID for financial summary | Yes |
 | `SLACK_JENIN_USER_ID` | Jenin's user ID for parcel DMs | No |
+| `AIRTABLE_API_KEY` | Airtable API key for email automation | No |
 | `ADMIN_API_KEY` | Admin API key for admin endpoints | Yes |
 | `API_HOST` | Host to bind to | No (default: 0.0.0.0) |
 | `API_PORT` | Port to bind to | No (default: 8000) |

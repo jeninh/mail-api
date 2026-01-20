@@ -37,6 +37,7 @@ from app.slack_bot import slack_bot
 from app.security import hash_api_key, verify_api_key
 from app.background_jobs import start_scheduler, stop_scheduler, check_all_pending_letters
 from app.slack_socket_handler import start_socket_mode, stop_socket_mode
+from app.airtable_client import airtable_client
 
 logging.basicConfig(
     level=logging.INFO,
@@ -358,12 +359,34 @@ async def create_letter(
     
     await db.commit()
     
+    try:
+        full_address = f"{request.first_name} {request.last_name}<br>{request.address_line_1}"
+        if request.address_line_2:
+            full_address += f"<br>{request.address_line_2}"
+        full_address += f"<br>{request.city}, {request.state}, {request.postal_code}<br>{request.country}"
+        if request.recipient_email:
+            full_address += f"<br>{request.recipient_email}"
+        
+        await airtable_client.create_record(
+            first_name=request.first_name,
+            last_name=request.last_name,
+            email=request.recipient_email or "",
+            email_reason="Letter",
+            record_id=f"ltr!{letter_id}",
+            ysws=event.name,
+            contains=request.rubber_stamps,
+            full_address=full_address,
+        )
+    except Exception as e:
+        logger.error(f"Failed to create Airtable record for letter: {e}")
+    
     return LetterResponse(
         letter_id=letter_id,
         cost_usd=cents_to_usd(cost_cents),
         formatted_rubber_stamps=formatted_stamps,
         status=LetterStatus.QUEUED,
-        theseus_url=theseus_client.get_public_letter_url(letter_id)
+        theseus_url=theseus_client.get_public_letter_url(letter_id),
+        email_sent=True
     )
 
 
@@ -621,11 +644,33 @@ async def create_order(
     
     await db.commit()
     
+    try:
+        full_address = f"{request.first_name} {request.last_name}<br>{request.address_line_1}"
+        if request.address_line_2:
+            full_address += f"<br>{request.address_line_2}"
+        full_address += f"<br>{request.city}, {request.state}, {request.postal_code}<br>{request.country}"
+        if request.email:
+            full_address += f"<br>{request.email}"
+        
+        await airtable_client.create_record(
+            first_name=request.first_name,
+            last_name=request.last_name,
+            email=request.email or "",
+            email_reason="Order",
+            record_id=f"odr!{order_id}",
+            ysws=event.name,
+            contains=request.order_text,
+            full_address=full_address,
+        )
+    except Exception as e:
+        logger.error(f"Failed to create Airtable record for order: {e}")
+    
     return OrderResponse(
         order_id=order_id,
         status=OrderStatus.PENDING,
         status_url=status_url,
-        created_at=order.created_at
+        created_at=order.created_at,
+        email_sent=True
     )
 
 

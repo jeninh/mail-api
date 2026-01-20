@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     slack_canvas_id: str
     slack_jenin_user_id: str = ""
     
+    airtable_api_key: str = ""
+    
     admin_api_key: str
     
     api_host: str = "0.0.0.0"

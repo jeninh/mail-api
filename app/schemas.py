@@ -34,6 +34,7 @@ class LetterResponse(BaseModel):
     formatted_rubber_stamps: str
     status: LetterStatus
     theseus_url: str
+    email_sent: bool = False
 
     class Config:
         from_attributes = True
@@ -134,6 +135,7 @@ class OrderResponse(BaseModel):
     status: OrderStatus
     status_url: str
     created_at: datetime
+    email_sent: bool = False
 
     class Config:
         from_attributes = True
