@@ -372,7 +372,7 @@ async def create_letter(
             last_name=request.last_name,
             email=request.recipient_email or "",
             email_reason="Letter",
-            record_id=f"ltr!{letter_id}",
+            record_id=letter_id,
             ysws=event.name,
             contains=request.rubber_stamps,
             full_address=full_address,
