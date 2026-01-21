@@ -67,7 +67,9 @@ class Letter(Base):
     notes = Column(Text, nullable=True)
 
     cost_cents = Column(Integer, nullable=False)
-    status: Column[LetterStatus] = Column(Enum(LetterStatus), default=LetterStatus.QUEUED, nullable=False)
+    status: Column[LetterStatus] = Column(
+        Enum(LetterStatus), default=LetterStatus.QUEUED, nullable=False
+    )
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     mailed_at = Column(DateTime, nullable=True)
 
@@ -93,7 +95,9 @@ class Order(Base):
 
     # NOTE: PII (name, address) is sent ONLY to Slack and NEVER stored in database
 
-    status: Column[OrderStatus] = Column(Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
+    status: Column[OrderStatus] = Column(
+        Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False
+    )
     tracking_code = Column(String(255), nullable=True)
     fulfillment_note = Column(Text, nullable=True)
 
