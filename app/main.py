@@ -1,55 +1,56 @@
+import hashlib
+import hmac
 import html
 import logging
-import hmac
-import hashlib
 import secrets
-import time
 import string
+import time
 import uuid
-
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional
-from fastapi import FastAPI, Depends, HTTPException, Header, Request
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from sqlalchemy import select, func, update
+from slowapi.util import get_remote_address
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import get_db, init_db
+
+from app.airtable_client import airtable_client
+from app.background_jobs import check_all_pending_letters, start_scheduler, stop_scheduler
 from app.config import get_settings
-from app.models import Event, Letter, LetterStatus, MailType, Order, OrderStatus
-from app.schemas import (
-    LetterCreate,
-    LetterResponse,
-    ErrorResponse,
-    MarkPaidResponse,
-    FinancialSummaryResponse,
-    UnpaidEvent,
-    StatusCheckResponse,
-    CostCalculatorRequest,
-    CostCalculatorResponse,
-    StampCounts,
-    OrderCreate,
-    OrderResponse,
-    OrderStatusResponse,
-)
 from app.cost_calculator import (
+    CostCalculationError,
+    ParcelQuoteRequired,
     calculate_cost,
     cents_to_usd,
     get_stamp_region,
-    CostCalculationError,
-    ParcelQuoteRequired,
 )
+from app.database import get_db, init_db
+from app.models import Event, Letter, LetterStatus, MailType, Order, OrderStatus
 from app.rubber_stamp_formatter import format_rubber_stamps
-from app.theseus_client import theseus_client, TheseusAPIError
-from app.slack_bot import slack_bot
+from app.schemas import (
+    CostCalculatorRequest,
+    CostCalculatorResponse,
+    ErrorResponse,
+    FinancialSummaryResponse,
+    LetterCreate,
+    LetterResponse,
+    MarkPaidResponse,
+    OrderCreate,
+    OrderResponse,
+    OrderStatusResponse,
+    StampCounts,
+    StatusCheckResponse,
+    UnpaidEvent,
+)
 from app.security import hash_api_key, verify_api_key
-from app.background_jobs import start_scheduler, stop_scheduler, check_all_pending_letters
+from app.slack_bot import slack_bot
 from app.slack_socket_handler import start_socket_mode, stop_socket_mode
-from app.airtable_client import airtable_client
+from app.theseus_client import TheseusAPIError, theseus_client
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"

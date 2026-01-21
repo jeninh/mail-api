@@ -2,16 +2,17 @@ import asyncio
 import logging
 import re
 from datetime import datetime
-from slack_bolt.async_app import AsyncApp
+
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
+from slack_bolt.async_app import AsyncApp
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import get_async_session_local
-from app.models import Letter, Event, LetterStatus, Order, OrderStatus
+from app.models import Event, Letter, LetterStatus, Order, OrderStatus
 from app.slack_bot import slack_bot
-from app.theseus_client import theseus_client, TheseusAPIError
+from app.theseus_client import TheseusAPIError, theseus_client
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -267,8 +268,9 @@ async def handle_hermes_command(ack, body, client, respond):
 async def handle_paid_command(client, trigger_id, respond):
     """Open a modal to mark an event as paid."""
     from sqlalchemy import select
-    from app.models import Event
+
     from app.cost_calculator import cents_to_usd
+    from app.models import Event
 
     async with get_async_session_local()() as db:
         stmt = select(Event).where(Event.balance_due_cents > 0)
@@ -324,8 +326,9 @@ async def handle_paid_command(client, trigger_id, respond):
 async def handle_summary_command(respond):
     """Show unmailed letters summary by program and region."""
     from sqlalchemy import select
-    from app.models import Event, Letter, LetterStatus
+
     from app.cost_calculator import get_stamp_region
+    from app.models import Event, Letter, LetterStatus
 
     async with get_async_session_local()() as db:
         stmt = select(Letter).where(Letter.status != LetterStatus.SHIPPED)
@@ -384,8 +387,9 @@ async def handle_summary_command(respond):
 async def handle_financial_command(respond):
     """Show a financial summary of all unpaid events."""
     from sqlalchemy import select
-    from app.models import Event, Letter
+
     from app.cost_calculator import cents_to_usd, get_stamp_region
+    from app.models import Event, Letter
 
     async with get_async_session_local()() as db:
         stmt = select(Event).where(Event.balance_due_cents > 0)
@@ -435,7 +439,8 @@ async def handle_financial_command(respond):
 
 async def handle_status_command(respond):
     """Show current system status and statistics."""
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
+
     from app.models import Letter, LetterStatus
 
     async with get_async_session_local()() as db:
@@ -503,8 +508,9 @@ async def handle_mark_event_paid_submission(ack, body, client):
     event_id = int(values["event_select"]["event_selection"]["selected_option"]["value"])
 
     from sqlalchemy import select
-    from app.models import Event
+
     from app.cost_calculator import cents_to_usd
+    from app.models import Event
 
     async with get_async_session_local()() as db:
         stmt = select(Event).where(Event.id == event_id)

@@ -1,5 +1,6 @@
 import pytest
-from app.rubber_stamp_formatter import format_rubber_stamps, format_for_slack_display
+
+from app.rubber_stamp_formatter import format_for_slack_display, format_rubber_stamps
 
 
 class TestFormatRubberStamps:

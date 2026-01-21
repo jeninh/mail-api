@@ -10,17 +10,18 @@ Or with explicit database URL:
 """
 
 import argparse
-import secrets
 import asyncio
 import os
+import secrets
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from app.models import Event
+
 from app.database import Base
+from app.models import Event
 from app.security import generate_api_key, hash_api_key
 
 

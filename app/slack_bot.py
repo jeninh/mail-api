@@ -1,13 +1,15 @@
 import asyncio
 import logging
-from functools import partial
-from typing import Optional, List
 from datetime import datetime
+from functools import partial
+from typing import List, Optional
+
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+
 from app.config import get_settings
-from app.rubber_stamp_formatter import format_for_slack_display
 from app.cost_calculator import cents_to_usd
+from app.rubber_stamp_formatter import format_for_slack_display
 
 logger = logging.getLogger(__name__)
 

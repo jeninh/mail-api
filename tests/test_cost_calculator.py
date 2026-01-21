@@ -1,11 +1,12 @@
 import pytest
+
 from app.cost_calculator import (
-    calculate_lettermail_cost,
-    calculate_bubble_packet_cost,
-    calculate_cost,
-    cents_to_usd,
     CostCalculationError,
     ParcelQuoteRequired,
+    calculate_bubble_packet_cost,
+    calculate_cost,
+    calculate_lettermail_cost,
+    cents_to_usd,
 )
 from app.models import MailType
 
