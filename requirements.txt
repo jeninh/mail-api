@@ -4,9 +4,9 @@ uvicorn[standard]==0.27.1
 python-multipart==0.0.21
 
 # Database
-sqlalchemy[asyncio]==2.0.25
-asyncpg==0.29.0
-alembic==1.13.1
+sqlalchemy[asyncio]==2.0.45
+asyncpg==0.31.0
+alembic==1.18.1
 
 # Pydantic and validation
 pydantic==2.6.1
