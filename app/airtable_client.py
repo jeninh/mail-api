@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 import httpx
 from app.config import get_settings
 
@@ -24,7 +25,7 @@ FIELD_IDS = {
 class AirtableClient:
     def __init__(self):
         self.base_url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_ID}"
-        self.api_key = getattr(settings, 'airtable_api_key', None)
+        self.api_key = getattr(settings, "airtable_api_key", None)
 
     async def create_record(
         self,
@@ -71,7 +72,8 @@ class AirtableClient:
                 )
                 response.raise_for_status()
                 logger.info(f"Created Airtable record for {email_reason} {record_id}")
-                return response.json()
+                result: dict[Any, Any] = response.json()
+                return result
         except httpx.HTTPStatusError as e:
             logger.error(f"Airtable API error: {e.response.status_code} - {e.response.text}")
             return None
