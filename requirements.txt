@@ -1,6 +1,6 @@
 # FastAPI and server
-fastapi==0.109.2
-uvicorn[standard]==0.27.1
+fastapi==0.128.0
+uvicorn[standard]==0.40.0
 python-multipart==0.0.21
 
 # Database
@@ -9,8 +9,8 @@ asyncpg==0.31.0
 alembic==1.18.1
 
 # Pydantic and validation
-pydantic==2.6.1
-pydantic-settings==2.1.0
+pydantic==2.12.5
+pydantic-settings==2.12.0
 email-validator==2.3.0
 
 # HTTP client
