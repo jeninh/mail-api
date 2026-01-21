@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -10,16 +9,16 @@ class LetterCreate(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=255)
     last_name: str = Field(..., min_length=1, max_length=255)
     address_line_1: str = Field(..., min_length=1, max_length=255)
-    address_line_2: Optional[str] = Field(None, max_length=255)
+    address_line_2: str | None = Field(None, max_length=255)
     city: str = Field(..., min_length=1, max_length=255)
     state: str = Field(..., min_length=1, max_length=255)
     postal_code: str = Field(..., min_length=1, max_length=255)
     country: str = Field(..., min_length=1, max_length=255)
-    recipient_email: Optional[EmailStr] = None
+    recipient_email: EmailStr | None = None
     mail_type: MailType
-    weight_grams: Optional[int] = Field(None, ge=1)
+    weight_grams: int | None = Field(None, ge=1)
     rubber_stamps: str = Field(..., min_length=1)
-    notes: Optional[str] = None
+    notes: str | None = None
 
     @field_validator("weight_grams")
     @classmethod
@@ -66,14 +65,14 @@ class UnpaidEvent(BaseModel):
     balance_due_usd: float
     letter_count: int
     stamps: StampCounts
-    last_letter_at: Optional[datetime]
+    last_letter_at: datetime | None
 
     class Config:
         from_attributes = True
 
 
 class FinancialSummaryResponse(BaseModel):
-    unpaid_events: List[UnpaidEvent]
+    unpaid_events: list[UnpaidEvent]
     total_due_usd: float
     total_stamps: StampCounts
 
@@ -87,13 +86,13 @@ class StatusCheckResponse(BaseModel):
 class CostCalculatorRequest(BaseModel):
     country: str
     mail_type: MailType
-    weight_grams: Optional[int] = None
+    weight_grams: int | None = None
 
 
 class CostCalculatorResponse(BaseModel):
     cost_cents: int
     cost_usd: float
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class EventCreate(BaseModel):
@@ -124,9 +123,9 @@ class OrderCreate(BaseModel):
     order_text: str = Field(..., min_length=1, max_length=5000)
     first_name: str = Field(..., min_length=1, max_length=255)
     last_name: str = Field(..., min_length=1, max_length=255)
-    email: Optional[EmailStr] = None
+    email: EmailStr | None = None
     address_line_1: str = Field(..., min_length=1, max_length=255)
-    address_line_2: Optional[str] = Field(None, max_length=255)
+    address_line_2: str | None = Field(None, max_length=255)
     city: str = Field(..., min_length=1, max_length=255)
     state: str = Field(..., min_length=1, max_length=255)
     postal_code: str = Field(..., min_length=1, max_length=255)
@@ -147,7 +146,7 @@ class OrderResponse(BaseModel):
 class OrderStatusResponse(BaseModel):
     order_id: str
     status: OrderStatus
-    tracking_code: Optional[str] = None
-    fulfillment_note: Optional[str] = None
+    tracking_code: str | None = None
+    fulfillment_note: str | None = None
     created_at: datetime
-    fulfilled_at: Optional[datetime] = None
+    fulfilled_at: datetime | None = None

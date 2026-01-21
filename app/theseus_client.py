@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import httpx
 
@@ -9,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class TheseusAPIError(Exception):
-    def __init__(self, message: str, status_code: Optional[int] = None):
+    def __init__(self, message: str, status_code: int | None = None):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
@@ -29,8 +28,8 @@ class TheseusClient:
         queue_name: str,
         address: dict,
         rubber_stamps: str,
-        recipient_email: Optional[str] = None,
-        notes: Optional[str] = None,
+        recipient_email: str | None = None,
+        notes: str | None = None,
     ) -> dict:
         """
         Creates a letter in Theseus.
@@ -95,12 +94,12 @@ class TheseusClient:
                 logger.info(f"Letter created successfully: {result.get('id')}")
                 return result
 
-            except httpx.TimeoutException:
+            except httpx.TimeoutException as exc:
                 logger.error("Theseus API timeout")
-                raise TheseusAPIError("Theseus API timeout - please try again")
+                raise TheseusAPIError("Theseus API timeout - please try again") from exc
             except httpx.RequestError as e:
                 logger.error(f"Theseus API request error: {e}")
-                raise TheseusAPIError(f"Failed to connect to Theseus API: {str(e)}")
+                raise TheseusAPIError(f"Failed to connect to Theseus API: {str(e)}") from e
 
     async def get_letter_status(self, letter_id: str) -> dict:
         """
@@ -138,12 +137,12 @@ class TheseusClient:
                 result: dict[str, object] = response.json()
                 return result
 
-            except httpx.TimeoutException:
+            except httpx.TimeoutException as exc:
                 logger.error("Theseus API timeout")
-                raise TheseusAPIError("Theseus API timeout - please try again")
+                raise TheseusAPIError("Theseus API timeout - please try again") from exc
             except httpx.RequestError as e:
                 logger.error(f"Theseus API request error: {e}")
-                raise TheseusAPIError(f"Failed to connect to Theseus API: {str(e)}")
+                raise TheseusAPIError(f"Failed to connect to Theseus API: {str(e)}") from e
 
     async def mark_letter_mailed(self, letter_id: str) -> dict:
         """
@@ -182,12 +181,12 @@ class TheseusClient:
                 result: dict[str, object] = response.json()
                 return result
 
-            except httpx.TimeoutException:
+            except httpx.TimeoutException as exc:
                 logger.error("Theseus API timeout")
-                raise TheseusAPIError("Theseus API timeout - please try again")
+                raise TheseusAPIError("Theseus API timeout - please try again") from exc
             except httpx.RequestError as e:
                 logger.error(f"Theseus API request error: {e}")
-                raise TheseusAPIError(f"Failed to connect to Theseus API: {str(e)}")
+                raise TheseusAPIError(f"Failed to connect to Theseus API: {str(e)}") from e
 
     def get_letter_url(self, letter_id: str) -> str:
         """Returns the back office URL for a letter (used in Slack)."""

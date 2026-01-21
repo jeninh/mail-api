@@ -2,7 +2,6 @@ import asyncio
 import logging
 from datetime import datetime
 from functools import partial
-from typing import List, Optional
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -34,7 +33,7 @@ class SlackBot:
         country: str,
         rubber_stamps_raw: str,
         cost_cents: int,
-        notes: Optional[str],
+        notes: str | None,
         letter_id: str,
     ) -> tuple[str, str]:
         """
@@ -294,7 +293,7 @@ class SlackBot:
             logger.error(f"Failed to send parcel quote DM: {e}")
 
     async def send_server_lifecycle_notification(
-        self, event_type: str, details: Optional[str] = None
+        self, event_type: str, details: str | None = None
     ) -> None:
         """
         Sends server lifecycle notifications to Slack.
@@ -370,7 +369,7 @@ class SlackBot:
 
     async def update_financial_canvas(
         self,
-        unpaid_events: List[dict],
+        unpaid_events: list[dict],
         total_due_cents: int,
         total_letters: int,
         total_stamps_ca: int = 0,
@@ -381,7 +380,7 @@ class SlackBot:
         now = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
         total_due_usd = cents_to_usd(total_due_cents)
 
-        content = f"# 💰 Theseus Mail Financial Summary\n\n"
+        content = "# 💰 Theseus Mail Financial Summary\n\n"
         content += f"**Last Updated:** {now}\n\n"
         content += "## Unpaid Events\n\n"
 
@@ -432,9 +431,9 @@ class SlackBot:
         status_url: str,
         first_name: str,
         last_name: str,
-        email: Optional[str],
+        email: str | None,
         address_line_1: str,
-        address_line_2: Optional[str],
+        address_line_2: str | None,
         city: str,
         state: str,
         postal_code: str,
@@ -539,8 +538,8 @@ class SlackBot:
         order_id: str,
         order_text: str,
         status_url: str,
-        tracking_code: Optional[str],
-        fulfillment_note: Optional[str],
+        tracking_code: str | None,
+        fulfillment_note: str | None,
         fulfilled_at: datetime,
     ) -> None:
         """Updates the Slack message when an order is fulfilled."""
@@ -663,7 +662,7 @@ class SlackBot:
             logger.error(f"Failed to open fulfill modal: {e}")
 
     async def open_update_tracking_modal(
-        self, trigger_id: str, order_id: str, current_tracking: Optional[str] = None
+        self, trigger_id: str, order_id: str, current_tracking: str | None = None
     ) -> None:
         """Opens a modal to update tracking code for an order."""
         view = {

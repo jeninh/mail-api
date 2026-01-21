@@ -12,7 +12,6 @@ Or with explicit database URL:
 import argparse
 import asyncio
 import os
-import secrets
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

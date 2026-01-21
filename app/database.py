@@ -11,7 +11,7 @@ class Base(DeclarativeBase):
     pass
 
 
-@lru_cache()
+@lru_cache
 def get_engine():
     settings = get_settings()
     return create_async_engine(
@@ -23,7 +23,7 @@ def get_engine():
     )
 
 
-@lru_cache()
+@lru_cache
 def get_async_session_local():
     return async_sessionmaker(
         bind=get_engine(),

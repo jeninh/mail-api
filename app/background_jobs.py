@@ -3,7 +3,6 @@ from datetime import datetime
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_async_session_local
 from app.models import Event, Letter, LetterStatus

@@ -8,11 +8,10 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -47,7 +46,7 @@ from app.schemas import (
     StatusCheckResponse,
     UnpaidEvent,
 )
-from app.security import hash_api_key, verify_api_key
+from app.security import hash_api_key
 from app.slack_bot import slack_bot
 from app.slack_socket_handler import start_socket_mode, stop_socket_mode
 from app.theseus_client import TheseusAPIError, theseus_client
@@ -107,17 +106,14 @@ app.state.auth_limiter = auth_limiter
 
 
 @app.exception_handler(RateLimitExceeded)
-async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+async def rate_limit_exceeded_handler(_request: Request, _exc: RateLimitExceeded):
     return JSONResponse(
         status_code=429, content={"detail": "Rate limit exceeded. Please try again later."}
     )
 
 
-from fastapi.exceptions import RequestValidationError
-
-
 @app.exception_handler(RequestValidationError)
-async def pii_safe_validation_exception_handler(request: Request, exc: RequestValidationError):
+async def pii_safe_validation_exception_handler(_request: Request, exc: RequestValidationError):
     """
     Custom validation error handler that does NOT echo input values.
     This prevents PII (names, addresses, emails) from leaking in 422 error responses.
@@ -166,7 +162,7 @@ async def pii_safe_exception_handler(request: Request, exc: Exception):
 
 @auth_limiter.limit("10/minute")
 async def verify_event_api_key(
-    request: Request, authorization: str = Header(...), db: AsyncSession = Depends(get_db)
+    _request: Request, authorization: str = Header(...), db: AsyncSession = Depends(get_db)
 ) -> Event:
     """Verifies the event API key and returns the event."""
     if not authorization.startswith("Bearer "):
@@ -186,7 +182,7 @@ async def verify_event_api_key(
 
 
 @auth_limiter.limit("10/minute")
-async def verify_admin_api_key(request: Request, authorization: str = Header(...)) -> bool:
+async def verify_admin_api_key(_request: Request, authorization: str = Header(...)) -> bool:
     """Verifies the admin API key."""
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid authorization header format")
@@ -213,8 +209,8 @@ async def verify_slack_signature(
 
     try:
         timestamp = int(x_slack_request_timestamp)
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid Slack timestamp")
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail="Invalid Slack timestamp") from exc
 
     if abs(time.time() - timestamp) > 60 * 5:
         raise HTTPException(status_code=401, detail="Stale Slack request")
@@ -267,7 +263,7 @@ async def create_letter(
         )
 
     except CostCalculationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except ParcelQuoteRequired:
         cost_cents = 0
 
@@ -302,7 +298,7 @@ async def create_letter(
         raise HTTPException(
             status_code=502,
             detail="Mail service temporarily unavailable. Please DM @hermes on Slack.",
-        )
+        ) from e
 
     letter_id = theseus_response.get("id")
 
@@ -498,7 +494,7 @@ async def manual_status_check(_: bool = Depends(verify_admin_api_key)):
 
 @app.post("/api/v1/calculate-cost", response_model=CostCalculatorResponse)
 @limiter.limit("30/minute")
-async def calculate_shipping_cost(request: Request, body: CostCalculatorRequest):
+async def calculate_shipping_cost(_request: Request, body: CostCalculatorRequest):
     """Calculate shipping cost for a given mail type and destination."""
     try:
         assert body.weight_grams is not None
@@ -507,7 +503,7 @@ async def calculate_shipping_cost(request: Request, body: CostCalculatorRequest)
         )
         return CostCalculatorResponse(cost_cents=cost_cents, cost_usd=cents_to_usd(cost_cents))
     except CostCalculationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except ParcelQuoteRequired:
         return CostCalculatorResponse(
             cost_cents=0,
@@ -697,7 +693,7 @@ async def create_order(
 @app.get("/odr!{order_id}", response_class=HTMLResponse)
 @limiter.limit("60/minute")
 async def get_order_status_page(
-    request: Request, order_id: str, db: AsyncSession = Depends(get_db)
+    _request: Request, order_id: str, db: AsyncSession = Depends(get_db)
 ):
     """
     Public order status page.
@@ -820,7 +816,9 @@ async def get_order_status_page(
 
 @app.get("/api/v1/order/{order_id}/status", response_model=OrderStatusResponse)
 @limiter.limit("60/minute")
-async def get_order_status_api(request: Request, order_id: str, db: AsyncSession = Depends(get_db)):
+async def get_order_status_api(
+    _request: Request, order_id: str, db: AsyncSession = Depends(get_db)
+):
     """Get order status via API (public endpoint)."""
     stmt = select(Order).where(Order.order_id == order_id)
     result = await db.execute(stmt)
@@ -894,7 +892,7 @@ async def update_financial_canvas(db: AsyncSession):
 
 @app.post("/slack/interactions")
 async def handle_slack_interactions(
-    request: Request,
+    _request: Request,
     db: AsyncSession = Depends(get_db),
     body: bytes = Depends(verify_slack_signature),
 ):
@@ -1032,7 +1030,7 @@ async def handle_slack_interactions(
 
                 letter_stmt = select(Letter).where(Letter.letter_id == letter_id)
                 letter_result = await db.execute(letter_stmt)
-                letter: Optional[Letter] = letter_result.scalar_one_or_none()
+                letter: Letter | None = letter_result.scalar_one_or_none()
 
                 if letter:
                     try:
@@ -1086,27 +1084,27 @@ async def handle_slack_interactions(
 
 @app.get("/")
 @limiter.limit("60/minute")
-async def root(request: Request):
+async def root(_request: Request):
     """Redirect to documentation page."""
     return RedirectResponse(url="/docs-page")
 
 
 @app.get("/health")
 @limiter.limit("60/minute")
-async def health_check(request: Request):
+async def health_check(_request: Request):
     """Health check endpoint."""
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 
 @app.get("/docs-page", response_class=HTMLResponse)
 @limiter.limit("60/minute")
-async def get_docs_page(request: Request):
+async def get_docs_page(_request: Request):
     """Serve the custom documentation page."""
     try:
-        with open("docs/static_docs.html", "r") as f:
+        with open("docs/static_docs.html") as f:
             return HTMLResponse(content=f.read())
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Documentation not found")
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Documentation not found") from exc
 
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])

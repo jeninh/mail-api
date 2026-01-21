@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import re
 from datetime import datetime
@@ -6,7 +5,6 @@ from datetime import datetime
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import get_async_session_local
@@ -24,7 +22,7 @@ bolt_app = AsyncApp(
 
 
 @bolt_app.action(re.compile(r"^mark_mailed:"))
-async def handle_mark_mailed(ack, body, action):
+async def handle_mark_mailed(ack, _body, action):
     """Handle the 'Mark as Mailed' button click via Socket Mode."""
     await ack()
 
@@ -123,7 +121,7 @@ async def handle_update_tracking(ack, body, action):
 
 
 @bolt_app.view(re.compile(r"^fulfill_order_modal:"))
-async def handle_fulfill_order_modal(ack, body, view):
+async def handle_fulfill_order_modal(ack, _body, view):
     """Handle the fulfill order modal submission via Socket Mode."""
     callback_id = view.get("callback_id", "")
     order_id = callback_id.replace("fulfill_order_modal:", "")
@@ -178,7 +176,7 @@ async def handle_fulfill_order_modal(ack, body, view):
 
 
 @bolt_app.view(re.compile(r"^update_tracking_modal:"))
-async def handle_update_tracking_modal(ack, body, view):
+async def handle_update_tracking_modal(ack, _body, view):
     """Handle the update tracking modal submission via Socket Mode."""
     callback_id = view.get("callback_id", "")
     order_id = callback_id.replace("update_tracking_modal:", "")
@@ -339,7 +337,7 @@ async def handle_summary_command(respond):
             await respond(response_type="ephemeral", text="✅ No unmailed letters! All caught up.")
             return
 
-        event_ids = set(l.event_id for l in unmailed_letters)
+        event_ids = {letter.event_id for letter in unmailed_letters}
         events_stmt = select(Event).where(Event.id.in_(event_ids))
         events_result = await db.execute(events_stmt)
         events = {e.id: e for e in events_result.scalars().all()}
@@ -371,7 +369,7 @@ async def handle_summary_command(respond):
 
         total_unmailed = len(unmailed_letters)
         lines = [
-            f"📬 *Unmailed Letters Summary*\n",
+            "📬 *Unmailed Letters Summary*\n",
             f"*Total:* {total_unmailed} letters",
             f"🇨🇦 {total_ca} | 🇺🇸 {total_us} | 🌍 {total_int}\n",
             "*By Program:*",
