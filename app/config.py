@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     admin_api_key: str
 
-    api_host: str = "0.0.0.0"
+    api_host: str = "0.0.0.0"  # nosec B104 - Intentional for container deployment
     api_port: int = 8000
     debug: bool = False
 
