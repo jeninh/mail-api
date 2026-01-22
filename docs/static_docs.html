@@ -531,6 +531,11 @@
                             <td>Recipient's email (not stored)</td>
                         </tr>
                         <tr>
+                            <td>phone_number <span class="optional">optional</span></td>
+                            <td>string</td>
+                            <td>Recipient's phone number, max 50 chars (not stored)</td>
+                        </tr>
+                        <tr>
                             <td>address_line_1 <span class="required">required</span></td>
                             <td>string</td>
                             <td>Street address (not stored)</td>
@@ -560,6 +565,11 @@
                             <td>string</td>
                             <td>Country name (not stored)</td>
                         </tr>
+                        <tr>
+                            <td>order_notes <span class="optional">optional</span></td>
+                            <td>string</td>
+                            <td>Special delivery instructions or notes, max 1000 chars (not stored)</td>
+                        </tr>
                     </table>
 
                     <h4>Response</h4>
@@ -581,11 +591,13 @@
     "first_name": "Orpheus",
     "last_name": "Hacksworth",
     "email": "orpheus@hackclub.com",
+    "phone_number": "+1-555-123-4567",
     "address_line_1": "123 Hacker Way",
     "city": "Shelburne",
     "state": "VT",
     "postal_code": "05482",
-    "country": "United States"
+    "country": "United States",
+    "order_notes": "Door code is 1234"
   }'</code></pre>
                 </div>
 
@@ -660,7 +672,7 @@
     "state": "VT",
     "postal_code": "05482",
     "country": "United States",
-    "order_notes": "Please include gift wrap if possible"
+    "order_notes": "Door code is 1234"
   }'</code></pre>
                 </div>
 
@@ -684,7 +696,7 @@ response = requests.post(
         "state": "VT",
         "postal_code": "05482",
         "country": "United States",
-        "order_notes": "Please include gift wrap if possible"
+        "order_notes": "Door code is 1234"
     }
 )
 
@@ -976,9 +988,13 @@ console.log(data);</code></pre>
                                 <label for="pg-order-last-name">Last Name *</label>
                                 <input type="text" id="pg-order-last-name" placeholder="Hacksworth" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
                             </div>
-                            <div class="form-group" style="grid-column: span 2;">
+                            <div class="form-group">
                                 <label for="pg-order-email">Email</label>
                                 <input type="email" id="pg-order-email" placeholder="orpheus@hackclub.com" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group">
+                                <label for="pg-order-phone">Phone Number</label>
+                                <input type="tel" id="pg-order-phone" placeholder="+1-555-123-4567" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
                             </div>
                             <div class="form-group" style="grid-column: span 2;">
                                 <label for="pg-order-address1">Address Line 1 *</label>
@@ -1003,6 +1019,10 @@ console.log(data);</code></pre>
                             <div class="form-group">
                                 <label for="pg-order-country">Country *</label>
                                 <input type="text" id="pg-order-country" placeholder="United States" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="pg-order-notes">Delivery Instructions / Notes</label>
+                                <textarea id="pg-order-notes" rows="2" placeholder="Door code is 1234" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); resize: vertical;"></textarea>
                             </div>
                         </div>
                     </div>
@@ -1212,6 +1232,12 @@ console.log(data);</code></pre>
                     
                     const email = document.getElementById('pg-order-email').value;
                     if (email) data.email = email;
+                    
+                    const phone = document.getElementById('pg-order-phone').value;
+                    if (phone) data.phone_number = phone;
+                    
+                    const orderNotes = document.getElementById('pg-order-notes').value;
+                    if (orderNotes) data.order_notes = orderNotes;
                     
                     body = JSON.stringify(data);
                 } else if (endpoint === 'order-status') {
