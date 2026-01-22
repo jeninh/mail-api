@@ -222,15 +222,14 @@ async def handle_update_tracking_modal(ack, body, view):
             logger.info(f"Order {order_id} tracking updated via Socket Mode")
 
 
-@bolt_app.command("/hermes")
-async def handle_hermes_command(ack, body, client, respond):
-    """Handle the /hermes slash command."""
+async def _handle_slash_command(ack, body, client, respond, command_name: str):
+    """Handle the slash command logic for both /hermes and /jenin-mail."""
     await ack()
     user_id = body.get("user_id", "unknown")
     trigger_id = body.get("trigger_id")
     text = body.get("text", "").strip().lower()
 
-    logger.info(f"/hermes command from {user_id}: {text}")
+    logger.info(f"{command_name} command from {user_id}: {text}")
 
     if user_id != settings.slack_jenin_user_id:
         await respond(response_type="ephemeral", text="Unauthorized")
@@ -250,12 +249,24 @@ async def handle_hermes_command(ack, body, client, respond):
             text=(
                 "❓ *Unknown Command*\n\n"
                 "Available commands:\n"
-                "• `/hermes summary` - View unmailed letters by program & region\n"
-                "• `/hermes financial` - View unpaid balances\n"
-                "• `/hermes paid` - Mark an event as paid\n"
-                "• `/hermes status` - Check system status"
+                f"• `{command_name} summary` - View unmailed letters by program & region\n"
+                f"• `{command_name} financial` - View unpaid balances\n"
+                f"• `{command_name} paid` - Mark an event as paid\n"
+                f"• `{command_name} status` - Check system status"
             )
         )
+
+
+@bolt_app.command("/hermes")
+async def handle_hermes_command(ack, body, client, respond):
+    """Handle the /hermes slash command."""
+    await _handle_slash_command(ack, body, client, respond, "/hermes")
+
+
+@bolt_app.command("/jenin-mail")
+async def handle_jenin_mail_command(ack, body, client, respond):
+    """Handle the /jenin-mail slash command."""
+    await _handle_slash_command(ack, body, client, respond, "/jenin-mail")
 
 
 async def handle_paid_command(client, trigger_id, respond):
@@ -460,7 +471,7 @@ async def handle_financial_command(respond):
     lines.append(f"\n*Total Due:* ${total_usd:.2f}")
     lines.append(f"*Total Letters:* {total_letters}")
     lines.append(f"*Total Stamps:* 🇨🇦 {total_ca} | 🇺🇸 {total_us} | 🌍 {total_int}")
-    lines.append("\n_Use `/jenin-mail paid` to mark an event as paid._")
+    lines.append("\n_Use `/hermes paid` or `/jenin-mail paid` to mark an event as paid._")
 
     await respond(
         response_type="ephemeral",

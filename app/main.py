@@ -643,12 +643,14 @@ async def create_order(
             first_name=request.first_name,
             last_name=request.last_name,
             email=request.email,
+            phone_number=request.phone_number,
             address_line_1=request.address_line_1,
             address_line_2=request.address_line_2,
             city=request.city,
             state=request.state,
             postal_code=request.postal_code,
-            country=request.country
+            country=request.country,
+            order_notes=request.order_notes
         )
         order.slack_message_ts = message_ts
         order.slack_channel_id = channel_id

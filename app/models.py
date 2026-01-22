@@ -94,11 +94,7 @@ class Order(Base):
     order_text = Column(Text, nullable=False)
 
     # NOTE: PII (name, address) is sent ONLY to Slack and NEVER stored in database
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> 10a62c646a3f8190a0b45107cd691cdeb05104f2
     status: "OrderStatus" = Column(Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False)  # type: ignore[assignment]
     tracking_code = Column(String(255), nullable=True)
     fulfillment_note = Column(Text, nullable=True)
