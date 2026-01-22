@@ -22,7 +22,7 @@ class TestFormatRubberStamps:
     def test_force_splits_long_word(self):
         text = "Congratulations"
         result = format_rubber_stamps(text, max_line_length=11)
-        lines = result.split('\n')
+        lines = result.split("\n")
         assert len(lines) == 2
         assert lines[0] == "Congratulat"
         assert lines[1] == "ions"
@@ -30,7 +30,7 @@ class TestFormatRubberStamps:
     def test_complex_example(self):
         text = "1x pack of stickers\n1x Postcard of Euan eating a Bread"
         result = format_rubber_stamps(text)
-        lines = result.split('\n')
+        lines = result.split("\n")
         for line in lines:
             assert len(line) <= 11
 
@@ -46,7 +46,7 @@ class TestFormatRubberStamps:
     def test_mixed_content(self):
         text = "3x Stickers\n1x T-Shirt Large"
         result = format_rubber_stamps(text)
-        lines = result.split('\n')
+        lines = result.split("\n")
         assert lines[0] == "3x Stickers"
         assert all(len(line) <= 11 for line in lines)
 

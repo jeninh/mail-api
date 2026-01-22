@@ -4,21 +4,21 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     database_url: str
-    
+
     theseus_api_key: str
     theseus_base_url: str = "https://mail.hackclub.com/api/v1"
-    
+
     slack_bot_token: str
     slack_app_token: str  # xapp-* token for Socket Mode
     slack_signing_secret: str  # For HTTP webhook verification
     slack_notification_channel: str
     slack_canvas_id: str
     slack_jenin_user_id: str = ""
-    
+
     airtable_api_key: str = ""
-    
+
     admin_api_key: str
-    
+
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     debug: bool = False
@@ -30,4 +30,4 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    return Settings()  # type: ignore[call-arg]

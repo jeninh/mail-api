@@ -114,6 +114,7 @@ class EventResponse(BaseModel):
 
 class EventWithApiKeyResponse(EventResponse):
     """Only used when creating a new event - includes the API key once."""
+
     api_key: str
 
 

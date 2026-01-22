@@ -5,7 +5,7 @@ from app.cost_calculator import (
     calculate_cost,
     cents_to_usd,
     CostCalculationError,
-    ParcelQuoteRequired
+    ParcelQuoteRequired,
 )
 from app.models import MailType
 
