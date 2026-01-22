@@ -481,12 +481,14 @@ class SlackBot:
         first_name: str,
         last_name: str,
         email: str | None,
+        phone_number: str | None,
         address_line_1: str,
         address_line_2: str | None,
         city: str,
         state: str,
         postal_code: str,
-        country: str
+        country: str,
+        order_notes: str | None
     ) -> tuple[str, str]:
         """
         Sends a notification when an order is created.
@@ -505,6 +507,7 @@ class SlackBot:
         address_text = "\n".join(address_parts)
 
         email_text = f"\n*Email:* {email}" if email else ""
+        phone_text = f"\n*Phone:* {phone_number}" if phone_number else ""
 
         blocks = [
             {
@@ -536,7 +539,7 @@ class SlackBot:
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*Ship To:*\n*{first_name} {last_name}*\n{address_text}{email_text}"
+                    "text": f"*Ship To:*\n*{first_name} {last_name}*\n{address_text}{email_text}{phone_text}"
                 }
             },
             {
@@ -548,6 +551,18 @@ class SlackBot:
                     }
                 ]
             },
+        ]
+
+        if order_notes:
+            blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Notes:*\n{order_notes}"
+                }
+            })
+
+        blocks.extend([
             {
                 "type": "divider"
             },
@@ -584,7 +599,7 @@ class SlackBot:
                     }
                 ]
             }
-        ]
+        ])
 
         try:
             response = await self._run_sync(

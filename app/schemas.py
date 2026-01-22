@@ -123,12 +123,14 @@ class OrderCreate(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=255)
     last_name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr | None = None
+    phone_number: str | None = Field(None, max_length=50)
     address_line_1: str = Field(..., min_length=1, max_length=255)
     address_line_2: str | None = Field(None, max_length=255)
     city: str = Field(..., min_length=1, max_length=255)
     state: str = Field(..., min_length=1, max_length=255)
     postal_code: str = Field(..., min_length=1, max_length=255)
     country: str = Field(..., min_length=1, max_length=255)
+    order_notes: str | None = Field(None, max_length=1000)
 
 
 class OrderResponse(BaseModel):

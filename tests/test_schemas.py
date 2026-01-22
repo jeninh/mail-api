@@ -164,3 +164,43 @@ class TestOrderCreate:
         with pytest.raises(ValidationError) as exc_info:
             OrderCreate(**valid_order_data)
         assert "address_line_2" in str(exc_info.value)
+
+    def test_order_notes_optional(self, valid_order_data):
+        order = OrderCreate(**valid_order_data)
+        assert order.order_notes is None
+
+    def test_order_notes_valid(self, valid_order_data):
+        valid_order_data["order_notes"] = "Please leave at front door"
+        order = OrderCreate(**valid_order_data)
+        assert order.order_notes == "Please leave at front door"
+
+    def test_order_notes_max_length_valid(self, valid_order_data):
+        valid_order_data["order_notes"] = "a" * 1000
+        order = OrderCreate(**valid_order_data)
+        assert len(order.order_notes) == 1000
+
+    def test_order_notes_max_length_exceeded(self, valid_order_data):
+        valid_order_data["order_notes"] = "a" * 1001
+        with pytest.raises(ValidationError) as exc_info:
+            OrderCreate(**valid_order_data)
+        assert "order_notes" in str(exc_info.value)
+
+    def test_phone_number_optional(self, valid_order_data):
+        order = OrderCreate(**valid_order_data)
+        assert order.phone_number is None
+
+    def test_phone_number_valid(self, valid_order_data):
+        valid_order_data["phone_number"] = "+1-555-123-4567"
+        order = OrderCreate(**valid_order_data)
+        assert order.phone_number == "+1-555-123-4567"
+
+    def test_phone_number_max_length_valid(self, valid_order_data):
+        valid_order_data["phone_number"] = "a" * 50
+        order = OrderCreate(**valid_order_data)
+        assert len(order.phone_number) == 50
+
+    def test_phone_number_max_length_exceeded(self, valid_order_data):
+        valid_order_data["phone_number"] = "a" * 51
+        with pytest.raises(ValidationError) as exc_info:
+            OrderCreate(**valid_order_data)
+        assert "phone_number" in str(exc_info.value)
