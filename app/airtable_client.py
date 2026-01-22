@@ -1,5 +1,8 @@
 import logging
+from typing import Any
+
 import httpx
+
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -71,7 +74,8 @@ class AirtableClient:
                 )
                 response.raise_for_status()
                 logger.info(f"Created Airtable record for {email_reason} {record_id}")
-                return response.json()
+                result: dict[str, Any] = response.json()
+                return result
         except httpx.HTTPStatusError as e:
             logger.error(f"Airtable API error: {e.response.status_code} - {e.response.text}")
             return None

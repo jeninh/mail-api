@@ -19,7 +19,7 @@ def generate_admin_key(length: int = 64) -> str:
 
 def main():
     api_key = generate_admin_key()
-    
+
     print("\n✅ Admin API Key Created")
     print(f"API Key: {api_key}")
     print("\n📝 Add this to your .env file as:")

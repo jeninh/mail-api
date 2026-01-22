@@ -10,32 +10,32 @@ Or with explicit database URL:
 """
 
 import argparse
-import secrets
 import asyncio
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from app.models import Event
+
 from app.database import Base
+from app.models import Event
 from app.security import generate_api_key, hash_api_key
 
 
 async def create_event(database_url: str, event_name: str, queue_name: str) -> tuple[int, str]:
     """Create an event with a new API key."""
     engine = create_async_engine(database_url, echo=False)
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    
+
     api_key = generate_api_key()
     api_key_hash = hash_api_key(api_key)
-    
+
     async with async_session() as session:
         event = Event(
             name=event_name,
@@ -48,7 +48,7 @@ async def create_event(database_url: str, event_name: str, queue_name: str) -> t
         session.add(event)
         await session.commit()
         await session.refresh(event)
-        
+
         return event.id, api_key
 
 
@@ -69,29 +69,29 @@ def main():
         required=True,
         help="Theseus queue name (e.g., 'haxmas-2024-letters')"
     )
-    
+
     args = parser.parse_args()
-    
+
     if not args.database_url:
         print("Error: Database URL is required. Set DATABASE_URL env var or use --database-url")
         sys.exit(1)
-    
+
     database_url = args.database_url
     if database_url.startswith("postgresql://"):
         database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    
+
     try:
         event_id, api_key = asyncio.run(
             create_event(database_url, args.event_name, args.queue_name)
         )
-        
+
         print("\n✅ API Key Created")
         print(f"Event ID: {event_id}")
         print(f"Event: {args.event_name}")
         print(f"Queue: {args.queue_name}")
         print(f"API Key: {api_key}")
         print("\n⚠️  Keep this key secure! It cannot be retrieved again.")
-        
+
     except Exception as e:
         print(f"\n❌ Error creating API key: {e}")
         sys.exit(1)
