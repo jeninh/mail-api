@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Any, Optional
 import httpx
 from app.config import get_settings
 
@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class TheseusAPIError(Exception):
-    def __init__(self, message: str, status_code: int = None):
+    def __init__(self, message: str, status_code: int | None = None):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
@@ -51,7 +51,7 @@ class TheseusClient:
         """
         url = f"{self.base_url}/letter_queues/{queue_name}"
         
-        payload = {
+        payload: dict[str, Any] = {
             "address": {
                 "first_name": address["first_name"],
                 "last_name": address["last_name"],
@@ -67,7 +67,7 @@ class TheseusClient:
         }
         
         if notes:
-            payload["metadata"]["notes"] = notes
+            payload["metadata"]["notes"] = notes  # type: ignore[index]
         
         if recipient_email:
             payload["recipient_email"] = recipient_email
@@ -90,7 +90,7 @@ class TheseusClient:
                         status_code=response.status_code
                     )
                 
-                result = response.json()
+                result: dict[str, Any] = response.json()
                 logger.info(f"Letter created successfully: {result.get('id')}")
                 return result
                 
@@ -136,7 +136,8 @@ class TheseusClient:
                         status_code=response.status_code
                     )
                 
-                return response.json()
+                result: dict[str, Any] = response.json()
+                return result
                 
             except httpx.TimeoutException:
                 logger.error("Theseus API timeout")
@@ -145,7 +146,7 @@ class TheseusClient:
                 logger.error(f"Theseus API request error: {e}")
                 raise TheseusAPIError(f"Failed to connect to Theseus API: {str(e)}")
     
-    async def mark_letter_mailed(self, letter_id: str) -> dict:
+    async def mark_letter_mailed(self, letter_id: str) -> dict[str, Any]:
         """
         Marks a letter as mailed in Theseus.
         
@@ -181,7 +182,8 @@ class TheseusClient:
                     )
                 
                 logger.info(f"Letter {letter_id} marked as mailed in Theseus")
-                return response.json()
+                result: dict[str, Any] = response.json()
+                return result
                 
             except httpx.TimeoutException:
                 logger.error("Theseus API timeout")

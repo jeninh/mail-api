@@ -63,14 +63,14 @@ class Letter(Base):
     country = Column(String(255), nullable=False)
     recipient_email = Column(String(255), nullable=True)
 
-    mail_type = Column(Enum(MailType), nullable=False)
+    mail_type: "MailType" = Column(Enum(MailType), nullable=False)  # type: ignore[assignment]
     weight_grams = Column(Integer, nullable=True)
     rubber_stamps_raw = Column(Text, nullable=False)
     rubber_stamps_formatted = Column(Text, nullable=False)
     notes = Column(Text, nullable=True)
 
     cost_cents = Column(Integer, nullable=False)
-    status = Column(Enum(LetterStatus), default=LetterStatus.QUEUED, nullable=False)
+    status: "LetterStatus" = Column(Enum(LetterStatus), default=LetterStatus.QUEUED, nullable=False)  # type: ignore[assignment]
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     mailed_at = Column(DateTime, nullable=True)
 
@@ -96,7 +96,7 @@ class Order(Base):
     
     # NOTE: PII (name, address) is sent ONLY to Slack and NEVER stored in database
     
-    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
+    status: "OrderStatus" = Column(Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False)  # type: ignore[assignment]
     tracking_code = Column(String(255), nullable=True)
     fulfillment_note = Column(Text, nullable=True)
     

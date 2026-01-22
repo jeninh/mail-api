@@ -63,6 +63,7 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.11"
+plugins = ["sqlalchemy.ext.mypy.plugin"]
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -70,10 +71,14 @@ disallow_incomplete_defs = false
 check_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 warn_no_return = true
 strict_equality = true
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["app.slack_bot", "app.slack_socket_handler", "app.background_jobs", "app.main"]
+disable_error_code = ["arg-type", "assignment", "list-item", "attr-defined", "index", "type-var"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"

@@ -83,7 +83,7 @@ def calculate_parcel_cost(weight_grams: int, country: str) -> int:
     )
 
 
-def calculate_cost(mail_type: MailType, country: str, weight_grams: int = None) -> int:
+def calculate_cost(mail_type: MailType, country: str, weight_grams: int | None = None) -> int:
     """
     Main cost calculation function.
     Returns cost in cents USD.
