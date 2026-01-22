@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.models import MailType
-from app.schemas import LetterCreate, CostCalculatorRequest, OrderCreate
+from app.schemas import CostCalculatorRequest, LetterCreate, OrderCreate
 
 
 class TestLetterCreate:

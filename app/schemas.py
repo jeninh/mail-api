@@ -1,7 +1,9 @@
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, Field, EmailStr, field_validator
-from app.models import MailType, LetterStatus, OrderStatus
+from typing import List, Optional
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.models import LetterStatus, MailType, OrderStatus
 
 
 class LetterCreate(BaseModel):

@@ -1,12 +1,14 @@
 import logging
 from datetime import datetime
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import AsyncSessionLocal
-from app.models import Letter, LetterStatus, Event
-from app.theseus_client import theseus_client, TheseusAPIError
+from app.models import Event, Letter, LetterStatus
 from app.slack_bot import slack_bot
+from app.theseus_client import TheseusAPIError, theseus_client
 
 logger = logging.getLogger(__name__)
 
