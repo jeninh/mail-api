@@ -53,5 +53,7 @@ class TestVerifyApiKey:
     def test_returns_false_for_modified_hash(self):
         key = generate_api_key()
         key_hash = hash_api_key(key)
-        modified_hash = "0" + key_hash[1:]
+        first_char = key_hash[0]
+        replacement = "1" if first_char == "0" else "0"
+        modified_hash = replacement + key_hash[1:]
         assert verify_api_key(key, modified_hash) is False
