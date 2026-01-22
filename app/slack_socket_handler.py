@@ -222,6 +222,12 @@ async def handle_update_tracking_modal(ack, body, view):
             logger.info(f"Order {order_id} tracking updated via Socket Mode")
 
 
+@bolt_app.command("/jenin-mail")
+async def handle_jenin_mail_command(ack, body, client, respond):
+    """Handle the /jenin-mail slash command (alias for /hermes)."""
+    await handle_hermes_command(ack, body, client, respond)
+
+
 @bolt_app.command("/hermes")
 async def handle_hermes_command(ack, body, client, respond):
     """Handle the /hermes slash command."""
