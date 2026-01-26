@@ -22,7 +22,7 @@ slack-bolt==1.21.3
 aiohttp==3.13.3
 
 # Background jobs
-apscheduler==3.10.4
+apscheduler==3.11.2
 
 # Rate limiting
 slowapi==0.1.9
