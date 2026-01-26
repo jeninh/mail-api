@@ -28,7 +28,7 @@ apscheduler==3.10.4
 slowapi==0.1.9
 
 # Utilities
-python-dotenv==1.0.1
+python-dotenv==1.2.1
 
 # Testing
 pytest==7.4.4
